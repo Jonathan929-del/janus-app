@@ -1,16 +1,18 @@
 // Imports
 import axios from 'axios';
+import Buildings from './Buildings';
+import LoadingIcon from './LoadingIcon';
 import {useState, useEffect} from 'react';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import {View, Text, Pressable, StyleSheet, ScrollView} from 'react-native';
-import LoadingIcon from './LoadingIcon';
 
 
 // Main Function
 const Properties = () => {
 
-    const [properties, setProperties] = useState([{}]);
 
+    // Fetching properties
+    const [properties, setProperties] = useState([{}]);
     useEffect(() => {
         const propertiesFetcher = async () => {
             axios
@@ -23,27 +25,37 @@ const Properties = () => {
         propertiesFetcher();
     }, []);
 
+
+    // Properties subpages
+    const [propertyCode, setPropertyCode] = useState('');
+    const [isBuildingsOpened, setIsBuildingsOpened] = useState(false);
+    const buildingsOpener = code => {
+        setIsBuildingsOpened(true);
+        setPropertyCode(code);
+    }
+
+    
     return (
-        <View style={styles.container}>
-            <ScrollView>
-                {properties[0].property_code ? properties.map(property => (
-                    <View style={styles.itemContainer} key={property._id}>
-                        <Pressable style={styles.leftSection}>
-                            <Text style={styles.number}>{property.property_code}</Text>
-                            <Text style={styles.destination}>{property.name}</Text>
-                        </Pressable>
-                        <Pressable style={styles.middleSection}>
-                            <IonIcon name='location' color='#5f6368' size={25}/>
-                        </Pressable>
-                        <Pressable style={styles.rightSection}>
-                            <IonIcon name='arrow-forward' color='#5f6368' size={25}/>
-                        </Pressable>
-                    </View>
-                )) : <View style={styles.loadingIconContainer}>
-                        <LoadingIcon />
-                    </View>}
-            </ScrollView>
-        </View>
+        <ScrollView>
+            <Buildings 
+                isBuildingsOpened={isBuildingsOpened}
+                propertyCode={propertyCode}
+                setIsBuildingsOpened={setIsBuildingsOpened}
+            />
+            {properties[0].property_code ? properties.map(property => (
+                <View style={styles.itemContainer} key={property._id}>
+                    <Pressable style={styles.leftSection} onPress={() => buildingsOpener(property.property_code)}>
+                        <Text style={styles.number}>{property.property_code}</Text>
+                        <Text style={styles.destination}>{property.name}</Text>
+                    </Pressable>
+                    <Pressable style={styles.rightSection}>
+                        <IonIcon name='location' color='#5f6368' size={25}/>
+                    </Pressable>
+                </View>
+            )) : <View style={styles.loadingIconContainer}>
+                    <LoadingIcon />
+                </View>}
+        </ScrollView>
     )
 };
 
@@ -73,19 +85,12 @@ const styles = StyleSheet.create({
         alignItems:'flex-start',
         justifyContent:'center'
     },
-    middleSection:{
-        flex:1,
-        height:'100%',
-        display:'flex',
-        alignItems:'center',
-        justifyContent:'center'
-    },
     rightSection:{
         flex:1,
         height:'100%',
         display:'flex',
-        alignItems:'center',
         paddingRight:30,
+        alignItems:'center',
         justifyContent:'center'
     },
     number:{
