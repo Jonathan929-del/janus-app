@@ -1,10 +1,11 @@
 // Imports
 import axios from 'axios';
+import moment from 'moment';
+import Activity from './Activity';
 import LoadingIcon from './LoadingIcon';
 import {useState, useEffect} from 'react';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import {Modal, Text, StyleSheet, View, Pressable, ScrollView} from 'react-native';
-import Activity from './Activity';
 
 
 // Main Function
@@ -16,8 +17,12 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
     useEffect(() => {
         const activitiesFetcher = async () => {
             try {
-                const res = await axios.get(`https://janus-server-side.herokuapp.com/activities/${componentName}`);
-                setActivities(res.data);
+                const {data} = await axios.get(`https://janus-server-side.herokuapp.com/activities/${componentName}`);
+                setActivities(data.sort(
+                    (a, b) => {
+                        return new Date(b.date) - new Date(a.date);
+                    }
+                ));
             } catch (err) {
                 console.log(err);
             }
@@ -31,38 +36,46 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
     const activityOpener = id => {
         setActivityId(id);
         setIsActivityOpened(true);
-    }
+    };
 
 
+    
     return (
-    <Modal visible={isActivitiesOpened} animationType='slide'>
-        <Activity 
-            isActivityOpened={isActivityOpened}
-            setIsActivityOpened={setIsActivityOpened}
-            activityId={activityId}
-        />
-        <View style={styles.topbar}>
-            <Pressable onPress={() => setIsActivitiesOpened(false)}>
-                <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
-            </Pressable>
-            <Text style={styles.header}>{componentName} activities</Text>
-        </View>
-        <ScrollView>
-            {activities.length > 0 ? typeof(activities[0].user) === 'string' ? activities.map(activity => (
-                <Pressable style={styles.itemContainer} key={activity._id} onPress={() => activityOpener(activity._id)}>
-                    <View style={styles.leftSection}>
-                        <Text style={styles.buildingCode}>{activity.user}</Text>
-                        <Text style={styles.buildingNumber}>{activity.date}</Text>
-                    </View>
-                    <View style={styles.rightSection}>
-                        <IonIcon name='arrow-forward' color='#5f6368' size={25}/>
-                    </View>
+        <Modal visible={isActivitiesOpened} animationType='slide'>
+            <Activity 
+                isActivityOpened={isActivityOpened}
+                setIsActivityOpened={setIsActivityOpened}
+                activityId={activityId}
+            />
+            <View style={styles.topbar}>
+                <Pressable onPress={() => setIsActivitiesOpened(false)}>
+                    <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
                 </Pressable>
-            )) : <View style={styles.loadingIconContainer}>
-                <LoadingIcon />
-            </View> : <Text style={styles.noCom}>No activities to show</Text>}
-        </ScrollView>
-    </Modal>
+                <Text style={styles.header}>Activities</Text>
+            </View>
+            {activities.length > 0 ? <ScrollView horizontal={true}>
+                <View style={styles.mainContainer}>
+                    <View style={styles.listContainer}>
+                        <Text style={styles.listItem}>Task</Text>
+                        <Text style={styles.listItem}>Date</Text>
+                        <Text style={styles.listItem}>Component Code</Text>
+                        <Text style={styles.listItem}>Signature</Text>
+                        <Text style={styles.listItem}>Image</Text>
+                    </View>
+                        {typeof(activities[0].user === 'string') ? activities.map(activity => (
+                            <Pressable style={styles.listContainer} onPress={() => activityOpener(activity._id)}>
+                                <Text style={styles.listItemValue}>{activity.activity}</Text>
+                                <Text style={styles.listItemValue}>{moment(activity.date).format('YYYY-MM-DD')}</Text>
+                                <Text style={styles.listItemValue}>{activity.component}</Text>
+                                <Text style={styles.listItemValue}>{activity.user}</Text>
+                                <Text style={styles.listItemValue}></Text>
+                            </Pressable>
+                        )) : <View style={styles.loadingIconContainer}>
+                        <LoadingIcon />
+                    </View>}
+                </View>
+            </ScrollView> : <Text style={styles.noCom}>No activities to show</Text>}
+        </Modal>
   )
 };
 
@@ -127,6 +140,32 @@ const styles = StyleSheet.create({
         fontSize:12,
         marginTop:50,
         textAlign:'center'
+    },
+    mainContainer:{
+        display:'flex'
+    },
+    listContainer:{
+        display:'flex',
+        overflow:'scroll',
+        flexDirection:'row',
+        justifyContent:'space-between'
+    },
+    listItem:{
+        width:200,
+        borderWidth:1,
+        borderTopWidth:0,
+        paddingVertical:10,
+        borderColor:'#ccc',
+        paddingHorizontal:30
+    },
+    listItemValue:{
+        width:200,
+        borderWidth:1,
+        color:'#6e6e6e',
+        borderTopWidth:0,
+        paddingVertical:10,
+        borderColor:'#ccc',
+        paddingHorizontal:30,
     }
 });
 

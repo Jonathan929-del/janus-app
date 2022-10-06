@@ -1,5 +1,6 @@
 // Imports
 import axios from 'axios';
+import moment from 'moment';
 import {useEffect, useState} from 'react';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import {Modal, Pressable, Text, View, StyleSheet} from 'react-native';
@@ -39,7 +40,7 @@ const Activity = ({isActivityOpened, setIsActivityOpened, activityId}) => {
         </View>
         <View style={styles.item}>
           <Text style={styles.title}>Date:</Text>
-          <Text style={styles.value}>{activity?.date}</Text>
+          <Text style={styles.value}>{moment(activity?.date).format('YYYY-MM-DD')}</Text>
         </View>
         <View style={styles.item}>
           <Text style={styles.title}>Signature:</Text>

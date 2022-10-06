@@ -1,4 +1,6 @@
 // Imports
+import {useState} from 'react';
+import ActivityRegistry from './ActivityRegistry';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import {View, StyleSheet, Text, Pressable, ScrollView, Image} from 'react-native';
 
@@ -6,13 +8,18 @@ import {View, StyleSheet, Text, Pressable, ScrollView, Image} from 'react-native
 // Main Function
 const Menu = () => {
 
-    const ItemPresser = () => {
-        console.log('item pressed.');
-    }
+    const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
+    const activityRegistryOpener = () => {
+        setIsActivityRegistryOpened(true);
+    };
 
     return (
         <ScrollView style={styles.container}>
-            <Pressable style={styles.itemContainer} onPress={ItemPresser}>
+            <ActivityRegistry 
+                isActivityRegistryOpened={isActivityRegistryOpened}
+                setIsActivityRegistryOpened={setIsActivityRegistryOpened}
+            />
+            <Pressable style={styles.itemContainer} onPress={activityRegistryOpener}>
                 <View>
                     <IonIcon name='barcode-outline' size={80}/>
                 </View>
@@ -21,7 +28,7 @@ const Menu = () => {
                     <Text>1</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer} onPress={ItemPresser}>
+            <Pressable style={styles.itemContainer}>
                 <View>
                     <Image source={require('../assets/images/NFC.png')} style={styles.img}/>
                 </View>
@@ -30,8 +37,8 @@ const Menu = () => {
                     <Text>2</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer} onPress={ItemPresser}>
-                <View>
+            <Pressable style={styles.itemContainer}>
+                <View style={styles.locationIcon}>
                     <IonIcon name='location' size={80}/>
                 </View>
                 <View>
@@ -39,7 +46,7 @@ const Menu = () => {
                     <Text>3</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer} onPress={ItemPresser}>
+            <Pressable style={styles.itemContainer}>
                 <View>
                     <Image source={require('../assets/images/Houses.png')} style={styles.housesImg}/>
                 </View>
@@ -63,6 +70,7 @@ const styles = StyleSheet.create({
       height:150,
       width:'100%',
       display:'flex',
+      paddingLeft:'25%',
       borderColor:'#ccc',
       alignItems:'center',
       flexDirection:'row',
@@ -85,6 +93,9 @@ const styles = StyleSheet.create({
         height:35,
         marginLeft:0,
         marginRight:10
+    },
+    locationIcon:{
+        marginLeft:-10
     }
 });
 
