@@ -6,8 +6,9 @@ import {View, StyleSheet, Text, Pressable, ScrollView, Image} from 'react-native
 
 
 // Main Function
-const Menu = () => {
+const Menu = ({navigation}) => {
 
+    // Activity Registry opener
     const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
     const activityRegistryOpener = () => {
         setIsActivityRegistryOpened(true);
@@ -46,7 +47,7 @@ const Menu = () => {
                     <Text>3</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer}>
+            <Pressable style={styles.itemContainer} onPress={() => navigation.navigate('Properties')}>
                 <View>
                     <Image source={require('../assets/images/Houses.png')} style={styles.housesImg}/>
                 </View>

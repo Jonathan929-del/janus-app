@@ -53,7 +53,7 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
                 <Pressable style={styles.itemContainer} key={building.latitude}  onPress={() => buildingHandler(building.building_code)}>
                     <View style={styles.leftSection}>
                         <Text style={styles.buildingCode}>{building.building_code}</Text>
-                        <Text style={styles.buildingNumber}>{building.no_of_floors}</Text>
+                        {/* <Text style={styles.buildingNumber}>{building.no_of_floors}</Text> */}
                     </View>
                     <View style={styles.rightSection}>
                         <IonIcon name='arrow-forward' color='#5f6368' size={25} />
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
         justifyContent:'center'
     },
     buildingCode:{
-        marginBottom:10
+        // marginBottom:10
     },
     buildingNumber:{
         color:'#5f6368',

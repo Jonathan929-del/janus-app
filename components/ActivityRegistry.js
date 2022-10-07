@@ -3,13 +3,12 @@ import axios from 'axios';
 import moment from 'moment';
 import Camera from './Camera';
 import {useState, useEffect} from 'react';
-import {BarCodeScanner} from 'expo-barcode-scanner';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import {Modal, Text, StyleSheet, View, Pressable, TextInput, TouchableOpacity, ScrollView} from 'react-native';
 
 
 // Main Function
-const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened}) => {
+const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivityRegistryOpened}) => {
 
 
     // Form
@@ -17,7 +16,7 @@ const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened
     const [description, setDescription] = useState('');
     const [componentCode, setComponentCode] = useState('');
     const [selectedTask, setSelectedTask] = useState('Tillsyn');
-    const [signature, setSignature] = useState('Static signature');
+    const [signature, setSignature] = useState('');
     const descriptionHandler = text => {
         setDescription(text);
     }
@@ -31,16 +30,7 @@ const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened
 
     // Qrcode reading
     const [scanned, setScanned] = useState(false);
-    const [hasPermission, setHasPermission] = useState(false);
     const [isCameraOpened, setIsCameraOpened] = useState(false);
-    const askForCameraPermission = () => {
-        (async () => {
-            const {status} = await BarCodeScanner.requestPermissionsAsync();
-            setHasPermission(status === 'granted');
-        })()
-        setIsCameraOpened(true);
-        setScanned(false);
-    };
     const handleBarCodeScanned = async ({type, data}) => {
         setScanned(true);
         setIsCameraOpened(false);
@@ -53,6 +43,14 @@ const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened
             console.log(err);
         }
     };
+    const cameraOpener = () => {
+        setScanned(false);
+        setSelectedTask('Tillsyn');
+        setComponentCode('');
+        setDescription('');
+        setComponent({});
+        setIsCameraOpened(true);
+    };
 
 
     // Posting activity
@@ -60,11 +58,11 @@ const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened
         try {
             const input = {
                 date:new Date(),
-                user:'Static User',
+                user:signature,
                 description:description,
                 activity:selectedTask,
                 work_order:'',
-                time:JSON.stringify(new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds()),
+                time:new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds(),
                 article_number:'',
                 quantaty:'',
                 remark:'',
@@ -81,15 +79,44 @@ const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened
             }
             const res = await axios.post(`https://janus-server-side.herokuapp.com/activities`, input);
             setScanned(false);
-            setSignature('');
-            setSelectedTask('Tillsyn');
             setComponentCode('');
             setDescription('');
             setComponent({});
+            setSelectedTask('Tillsyn');
+            setIsActivityRegistryOpened(false);
         } catch (err) {
             console.log(err.message);
         }
-    }
+    };
+
+
+    // Fetching user
+    useEffect(() => {
+        const userFetcher = async () => {
+            try {
+                const res = await axios.get('https://janus-server-side.herokuapp.com/users');
+                setSignature(res.data[0].user);
+                const componentRes = await axios.get(`https://janus-server-side.herokuapp.com/components/component/${componentName}`);
+                componentName && setComponent(componentRes.data);
+                componentName && setComponentCode((componentRes.data.component_code));
+            } catch (err) {
+                console.log(err);
+            }
+        };
+        userFetcher();
+    }, []);
+
+
+    // Closing form
+    const cancelButton = () => {
+        setScanned(false);
+        setSelectedTask('Tillsyn');
+        setComponentCode('');
+        setDescription('');
+        setComponent({});
+        setIsActivityRegistryOpened(false);
+    };
+
 
     return (
         <Modal visible={isActivityRegistryOpened} animationType='slide'>
@@ -98,25 +125,26 @@ const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened
                 scanned={scanned}
                 setIsCameraOpened={setIsCameraOpened}
                 handleBarCodeScanned={handleBarCodeScanned}
+                setScanned={setScanned}
             />
             <View style={styles.container}>
                 <View style={styles.topbar}>
                     <Pressable onPress={() => setIsActivityRegistryOpened(false)}>
                         <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
                     </Pressable>
-                    <Text style={styles.header}>Registered Activities Form</Text>
+                    <Text style={styles.header}>{componentName ? componentName : 'Activity Form'}</Text>
                 </View>
                 <ScrollView>
                     <View style={styles.content}>
-                        <View style={styles.item}>
+                        {!componentName && <View style={styles.item}>
                             <View style={styles.fieldContainer}>
                                 <TextInput style={styles.input} value={componentCode} onChangeText={e => componentCodeFieldHandler(e)}/>
-                                <TouchableOpacity style={styles.scanButton} onPress={() => askForCameraPermission()}>
+                                <TouchableOpacity style={styles.scanButton} onPress={cameraOpener}>
                                     <Text style={styles.scanButtonText}>{scanned ? 'Scan Again' : 'Scan Barcode'}</Text>
                                     <IonIcon name='barcode-outline' color='#fff' size={25}/>
                                 </TouchableOpacity>
                             </View>
-                        </View>
+                        </View>}
                         <View style={styles.item}>
                             <View style={styles.labelFieldContainer}>
                                 <Text style={styles.labelText}>Label:</Text>
@@ -168,7 +196,7 @@ const ActivityRegistry = ({isActivityRegistryOpened, setIsActivityRegistryOpened
                     </View>
                 </ScrollView>
                 <View style={styles.bottomNav}>
-                    <Pressable style={styles.cancel} onPress={() => setIsActivityRegistryOpened(false)}>
+                    <Pressable style={styles.cancel} onPress={cancelButton}>
                         <Text style={styles.cancelText}>cancel</Text>
                     </Pressable>
                     <Pressable style={styles.save} onPress={activityPoster}>

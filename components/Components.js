@@ -52,7 +52,7 @@ const Components = ({buildingCode, isComponentsOpened, setIsComponentsOpened}) =
                 <Pressable style={styles.itemContainer} key={component._id} onPress={() => activityOpener(component.component_code)}>
                     <View style={styles.leftSection}>
                         <Text style={styles.buildingCode}>{component.component_code}</Text>
-                        <Text style={styles.buildingNumber}>{component.name}</Text>
+                        {/* <Text style={styles.buildingNumber}>{component.name}</Text> */}
                     </View>
                     <View style={styles.rightSection}>
                         <IonIcon name='arrow-forward' color='#5f6368' size={25}/>
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
         justifyContent:'center'
     },
     buildingCode:{
-        marginBottom:10
+        // marginBottom:10
     },
     buildingNumber:{
         color:'#5f6368',

@@ -46,7 +46,7 @@ const Properties = () => {
                 <View style={styles.itemContainer} key={property._id}>
                     <Pressable style={styles.leftSection} onPress={() => buildingsOpener(property.property_code)}>
                         <Text style={styles.number}>{property.property_code}</Text>
-                        <Text style={styles.destination}>{property.name}</Text>
+                        {/* <Text style={styles.destination}>{property.name}</Text> */}
                     </Pressable>
                     <Pressable style={styles.rightSection}>
                         <IonIcon name='location' color='#5f6368' size={25}/>
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
         justifyContent:'center'
     },
     number:{
-        marginBottom:10
+        // marginBottom:10
     },
     destination:{
         color:'#5f6368',

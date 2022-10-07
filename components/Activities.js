@@ -4,8 +4,9 @@ import moment from 'moment';
 import Activity from './Activity';
 import LoadingIcon from './LoadingIcon';
 import {useState, useEffect} from 'react';
+import ActivityRegistry from './ActivityRegistry';
 import IonIcon from 'react-native-vector-icons/Ionicons';
-import {Modal, Text, StyleSheet, View, Pressable, ScrollView} from 'react-native';
+import {Modal, Text, StyleSheet, View, Pressable, ScrollView, TouchableOpacity} from 'react-native';
 
 
 // Main Function
@@ -39,6 +40,12 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
     };
 
 
+    // Activity registry opening
+    const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
+    const activityRegistryOpener = () => {
+        setIsActivityRegistryOpened(true);
+    };
+
     
     return (
         <Modal visible={isActivitiesOpened} animationType='slide'>
@@ -46,6 +53,11 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
                 isActivityOpened={isActivityOpened}
                 setIsActivityOpened={setIsActivityOpened}
                 activityId={activityId}
+            />
+            <ActivityRegistry 
+                isActivityRegistryOpened={isActivityRegistryOpened}
+                setIsActivityRegistryOpened={setIsActivityRegistryOpened}
+                componentName={componentName}
             />
             <View style={styles.topbar}>
                 <Pressable onPress={() => setIsActivitiesOpened(false)}>
@@ -63,7 +75,7 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
                         <Text style={styles.listItem}>Image</Text>
                     </View>
                         {typeof(activities[0].user === 'string') ? activities.map(activity => (
-                            <Pressable style={styles.listContainer} onPress={() => activityOpener(activity._id)}>
+                            <Pressable style={styles.listContainer} onPress={() => activityOpener(activity._id)} key={activity._id}>
                                 <Text style={styles.listItemValue}>{activity.activity}</Text>
                                 <Text style={styles.listItemValue}>{moment(activity.date).format('YYYY-MM-DD')}</Text>
                                 <Text style={styles.listItemValue}>{activity.component}</Text>
@@ -73,8 +85,20 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
                         )) : <View style={styles.loadingIconContainer}>
                         <LoadingIcon />
                     </View>}
+                    <View style={styles.noActivitiesContainer}>
+                        <TouchableOpacity style={styles.buttonContainer} onPress={activityRegistryOpener}>
+                            <Text style={styles.buttonText}>Add Activity</Text>
+                            <IonIcon name='add-circle' style={styles.addIcon} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </ScrollView> : <Text style={styles.noCom}>No activities to show</Text>}
+            </ScrollView> : <View style={styles.noActivitiesContainer}>
+                    <Text style={styles.noCom}>No activities to show</Text>
+                    <TouchableOpacity style={styles.buttonContainer} onPress={activityRegistryOpener}>
+                        <Text style={styles.buttonText}>Add Activity</Text>
+                        <IonIcon name='add-circle' style={styles.addIcon} />
+                    </TouchableOpacity>
+                </View>}
         </Modal>
   )
 };
@@ -142,7 +166,8 @@ const styles = StyleSheet.create({
         textAlign:'center'
     },
     mainContainer:{
-        display:'flex'
+        display:'flex',
+        alignItems:'flex-start'
     },
     listContainer:{
         display:'flex',
@@ -166,6 +191,30 @@ const styles = StyleSheet.create({
         paddingVertical:10,
         borderColor:'#ccc',
         paddingHorizontal:30,
+    },
+    noActivitiesContainer:{
+        display:'flex',
+        alignItems:'center'
+    },
+    buttonContainer:{
+        marginTop:30,
+        marginLeft:10,
+        display:'flex',
+        borderRadius:5,
+        paddingVertical:10,
+        alignItems:'center',
+        flexDirection:'row',
+        paddingHorizontal:25,
+        backgroundColor:'#0d80e7',
+        justifyContent:'space-between'
+    },
+    buttonText:{
+        color:'#fff',
+    },
+    addIcon:{
+        fontSize:25,
+        color:'#fff',
+        marginLeft:10
     }
 });
 

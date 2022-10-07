@@ -8,9 +8,16 @@ import {Modal, Pressable, StyleSheet, View, Text} from 'react-native';
 // Main Function
 const Camera = ({isCameraOpened, scanned, handleBarCodeScanned, setIsCameraOpened}) => {
 
+    const askForCameraPermission = () => {
+        (async () => {
+            const {status} = await BarCodeScanner.requestPermissionsAsync();
+        })()
+    };
     useEffect(() => {
         scanned && setIsCameraOpened(false);
+        askForCameraPermission();
     }, []);
+
 
     return (
         <Modal visible={isCameraOpened} animationType='slide'>

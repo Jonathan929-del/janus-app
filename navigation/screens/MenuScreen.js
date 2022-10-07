@@ -3,9 +3,9 @@ import Menu from "../../components/Menu";
 
 
 // Main Function
-const MenuScreen = () => {
+const MenuScreen = ({navigation}) => {
   return (
-    <Menu />
+    <Menu navigation={navigation}/>
   )
 }
 
