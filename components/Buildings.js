@@ -27,12 +27,14 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
             try {
                 const res = await axios.get(`https://janus-server-side.herokuapp.com/buildings/${propertyCode}`);
                 setBuildings(res.data);
+                console.log(propertyCode);
             } catch (err) {
                 console.log(err);
             }
         }
         buildingsFetcher();
     }, [isBuildingsOpened]);
+
 
 
     return (

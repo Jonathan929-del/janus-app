@@ -4,10 +4,11 @@ import MapView, {Marker} from 'react-native-maps';
 import {useState, useEffect} from 'react';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import {View, StyleSheet, Pressable, Text} from 'react-native';
+import Buildings from './Buildings';
 
 
 // Main Function
-const Map = ({navigation}) => {
+const Map = () => {
 
 
   // Fetching properties
@@ -37,8 +38,22 @@ const Map = ({navigation}) => {
   };
 
 
+  // Buildings opener
+  const [isBuildingsOpened, setIsBuildingsOpened] = useState(false);
+  const [propertyCode, setPropertyCode] = useState('');
+  const buildingsOpener = text => {
+    setPropertyCode(text);
+    setIsBuildingsOpened(true);
+  }
+
+
   return (
     <View style={styles.container}>
+      <Buildings 
+        isBuildingsOpened={isBuildingsOpened}
+        setIsBuildingsOpened={setIsBuildingsOpened}
+        propertyCode={propertyCode}
+      />
       <MapView style={styles.map}
         initialRegion={{
           latitude:67.8601759249178,
@@ -58,7 +73,7 @@ const Map = ({navigation}) => {
             />
           ))}
       </MapView>
-      <Pressable style={styles.itemContainer} onPress={() => navigation.navigate('Properties')}>
+      <Pressable style={styles.itemContainer} onPress={() => buildingsOpener(selectedProperty.property_code)}>
           <View style={styles.leftSection}>
               <Text style={styles.number}>{selectedProperty?.property_code}</Text>
               <Text style={styles.destination}>{selectedProperty?.name}</Text>
