@@ -3,9 +3,9 @@ import Map from '../../components/Map';
 
 
 // Main Function
-const MapView = () => {
+const MapView = ({navigation}) => {
   return (
-    <Map />
+    <Map navigation={navigation}/>
   )
 }
 

@@ -12,9 +12,10 @@ import {Modal, Text, StyleSheet, View, Pressable, ScrollView, TouchableOpacity} 
 // Main Function
 const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) => {
 
-
+    
     // Fetching activities
     const [activities, setActivities] = useState([{}]);
+    const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
     useEffect(() => {
         const activitiesFetcher = async () => {
             try {
@@ -29,7 +30,7 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
             }
         }
         activitiesFetcher();
-    }, [componentName]);
+    }, [componentName, isActivityRegistryOpened]);
     
     // Opening activity
     const [isActivityOpened, setIsActivityOpened] = useState(false);
@@ -41,7 +42,6 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
 
 
     // Activity registry opening
-    const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
     const activityRegistryOpener = () => {
         setIsActivityRegistryOpened(true);
     };
