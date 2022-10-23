@@ -27,15 +27,12 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
             try {
                 const res = await axios.get(`https://janus-server-side.herokuapp.com/buildings/${propertyCode}`);
                 setBuildings(res.data);
-                console.log(propertyCode);
             } catch (err) {
                 console.log(err);
             }
         }
         buildingsFetcher();
     }, [isBuildingsOpened]);
-
-
 
     return (
     <Modal visible={isBuildingsOpened} animationType='slide'>
@@ -51,7 +48,7 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
             <Text style={styles.header}>Buildings</Text>
         </View>
         <ScrollView>
-            {buildings && typeof(buildings[0].building_code) === 'string' ? buildings.map(building => (
+            {buildings[0]._id ? buildings.map(building => (
                 <Pressable style={styles.itemContainer} key={building.latitude}  onPress={() => buildingHandler(building.building_code)}>
                     <View style={styles.leftSection}>
                         <Text style={styles.buildingCode}>{building.building_code}</Text>

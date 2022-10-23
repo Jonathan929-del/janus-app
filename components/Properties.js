@@ -24,7 +24,7 @@ const Properties = () => {
                         }
                     ));
                 })
-                .catch(err => console.log(err.JSON()));
+                .catch(err => console.log(err));
         };
         propertiesFetcher();
     }, []);
