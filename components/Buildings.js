@@ -34,6 +34,8 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
         buildingsFetcher();
     }, [isBuildingsOpened]);
 
+    console.log(buildings);
+
     return (
     <Modal visible={isBuildingsOpened} animationType='slide'>
         <Components 
