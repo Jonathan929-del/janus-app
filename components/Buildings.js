@@ -34,8 +34,6 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
         buildingsFetcher();
     }, [isBuildingsOpened]);
 
-    console.log(buildings);
-
     return (
     <Modal visible={isBuildingsOpened} animationType='slide'>
         <Components 
@@ -51,7 +49,7 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
         </View>
         <ScrollView>
             {buildings[0]._id ? buildings.map(building => (
-                <Pressable style={styles.itemContainer} key={building.latitude}  onPress={() => buildingHandler(building.building_code)}>
+                <Pressable style={styles.itemContainer} key={Math.floor(Math.random() * 1000000)}  onPress={() => buildingHandler(building.building_code)}>
                     <View style={styles.leftSection}>
                         <Text style={styles.buildingCode}>{building.building_code}</Text>
                         <Text style={styles.buildingNumber}>{building.no_of_floors}</Text>

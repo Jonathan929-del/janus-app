@@ -38,8 +38,7 @@ const Properties = () => {
         setPropertyCode(code);
     }
 
-    console.log(propertyCode);
-    
+
     return (
         <ScrollView>
             <Buildings 

@@ -17,7 +17,7 @@ const Map = () => {
     const propertiesFetcher = async () => {
       try {
         const res = await axios.get('https://janus-server-side.herokuapp.com/properties');
-        setProperties(res.data.filter(property => property.latitude !== ''));
+        setProperties(res.data.filter(property => property?.latitude !== ''));
       } catch (err) {
         console.log(err);
       }
@@ -61,12 +61,12 @@ const Map = () => {
           longitudeDelta: 0.01,
         }}
       >
-        {properties[0].property_code && properties.map(property => (
+        {properties[0]?.property_code && properties.map(property => (
             <Marker 
-              key={property._id}
+              key={Math.floor(Math.random() * 1000000)}
               coordinate={{
-                latitude:property.latitude ? JSON.parse(property.latitude) : 0,
-                longitude:property.latitude ? JSON.parse(property.longitude) : 0
+                latitude:property?.latitude ? JSON.parse(property?.latitude) : 0,
+                longitude:property?.latitude ? JSON.parse(property?.longitude) : 0
               }}
               onPress={() => propertyFetcher(property.latitude)}
             />
