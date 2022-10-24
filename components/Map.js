@@ -1,29 +1,28 @@
 // Imports
 import axios from 'axios';
-import MapView, {Marker} from 'react-native-maps';
-import {useState, useEffect} from 'react';
-import IonIcon from 'react-native-vector-icons/Ionicons';
-import {View, StyleSheet, Pressable, Text} from 'react-native';
 import Buildings from './Buildings';
+import {useState, useEffect} from 'react';
+import MapView, {Marker} from 'react-native-maps';
+import {View, StyleSheet, Pressable, Text} from 'react-native';
 
 
 // Main Function
 const Map = () => {
-
-
+  
+  
   // Fetching properties
   const [properties, setProperties] = useState([{}]);
   const [selectedProperty, setSelectedProperty] = useState({property_code:'1001', name:'BYGGMÄSTAREN'});
   useEffect(() => {
-      const propertiesFetcher = async () => {
-        try {
-          const res = await axios.get('https://janus-server-side.herokuapp.com/properties');
-          setProperties(res.data.filter(property => property.latitude !== ''));
-        } catch (err) {
-          console.log(err);
-        }
-      };
-      propertiesFetcher();
+    const propertiesFetcher = async () => {
+      try {
+        const res = await axios.get('https://janus-server-side.herokuapp.com/properties');
+        setProperties(res.data.filter(property => property.latitude !== ''));
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    propertiesFetcher();
   }, [properties]);
 
 
@@ -66,8 +65,8 @@ const Map = () => {
             <Marker 
               key={property._id}
               coordinate={{
-                latitude:JSON.parse(property.latitude),
-                longitude:JSON.parse(property.longitude)
+                latitude:property.latitude ? JSON.parse(property.latitude) : 0,
+                longitude:property.latitude ? JSON.parse(property.longitude) : 0
               }}
               onPress={() => propertyFetcher(property.latitude)}
             />
