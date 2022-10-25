@@ -4,15 +4,15 @@
     "slug": "janus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/janus.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/janus.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout":60000
     },
     "assetBundlePatterns": [
       "**/*"
@@ -22,7 +22,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/janus.png",
         "backgroundColor": "#FFFFFF"
       },
       "config":{
@@ -33,7 +33,7 @@
       "package": "janus.com"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/janus.png"
     }
   }
 }
