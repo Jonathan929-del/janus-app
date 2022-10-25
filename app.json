@@ -25,6 +25,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
+      "config":{
+          "googleMaps": {
+            "apiKey": "AIzaSyCPf41S1NfYmev12y08cbd61rAe5GzSakI"
+          }
+      },
       "package": "janus.com"
     },
     "web": {
