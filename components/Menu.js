@@ -25,26 +25,26 @@ const Menu = ({navigation}) => {
                     <IonIcon name='barcode-outline' size={80}/>
                 </View>
                 <View>
-                    <Text style={styles.text}>Barcode</Text>
+                    <Text style={styles.text}>Barcode/NFC</Text>
                     <Text>1</Text>
                 </View>
             </Pressable>
             <Pressable style={styles.itemContainer}>
                 <View>
-                    <Image source={require('../assets/images/NFC.png')} style={styles.img}/>
+                    <IonIcon name='barcode-outline' size={80}/>
                 </View>
                 <View>
-                    <Text style={styles.text}>NFC</Text>
-                    <Text>2</Text>
+                    <Text style={styles.text}>My Tasks</Text>
+                    <Text>1</Text>
                 </View>
             </Pressable>
             <Pressable style={styles.itemContainer}>
-                <View style={styles.locationIcon}>
-                    <IonIcon name='location' size={80}/>
+                <View>
+                    <IonIcon name='barcode-outline' size={80}/>
                 </View>
                 <View>
-                    <Text style={styles.text}>Geo Localize</Text>
-                    <Text>3</Text>
+                    <Text style={styles.text}>Near Me</Text>
+                    <Text>1</Text>
                 </View>
             </Pressable>
             <Pressable style={styles.itemContainer} onPress={() => navigation.navigate('Properties')}>
@@ -53,6 +53,15 @@ const Menu = ({navigation}) => {
                 </View>
                 <View>
                     <Text style={styles.text}>My Properties</Text>
+                    <Text>4</Text>
+                </View>
+            </Pressable>
+            <Pressable style={styles.itemContainer}>
+                <View>
+                    <IonIcon name='notifications' size={80}/>
+                </View>
+                <View>
+                    <Text style={styles.text}>Notifications</Text>
                     <Text>4</Text>
                 </View>
             </Pressable>
