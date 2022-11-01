@@ -58,7 +58,7 @@ const Menu = ({navigation}) => {
             </Pressable>
             <Pressable style={styles.itemContainer}>
                 <View>
-                    <IonIcon name='notifications' size={80}/>
+                    <IonIcon name='notifications' size={60}/>
                 </View>
                 <View>
                     <Text style={styles.text}>Notifications</Text>

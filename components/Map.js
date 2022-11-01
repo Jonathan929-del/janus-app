@@ -61,7 +61,7 @@ const Map = () => {
           longitudeDelta: 0.01,
         }}
       >
-        {properties[0]?.property_code && properties.map(property => (
+        {/* {properties[0]?.property_code && properties.map(property => (
             <Marker 
               key={Math.floor(Math.random() * 1000000)}
               coordinate={{
@@ -70,7 +70,7 @@ const Map = () => {
               }}
               onPress={() => propertyFetcher(property.latitude)}
             />
-          ))}
+          ))} */}
       </MapView>
       <Pressable style={styles.itemContainer} onPress={() => buildingsOpener(selectedProperty.property_code)}>
           <View style={styles.leftSection}>
@@ -89,7 +89,6 @@ const styles = StyleSheet.create({
     flex:1,
     alignItems:'center',
     position:'relative',
-    backgroundColor:'#fff',
     justifyContent:'center'
   },
   map:{
