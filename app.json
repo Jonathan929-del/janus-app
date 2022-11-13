@@ -11,29 +11,54 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "plugins": [
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Janus to access your photos.",
+          "savePhotosPermission": "Allow Janus to save photos.",
+          "isAccessMediaLocationEnabled": "true"
+        }
+      ]
+    ],
     "updates": {
-      "fallbackToCacheTimeout":0
+      "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Allow Janus to access your photos.",
+        "NSPhotoLibraryAddUsageDescription": "Allow Janus to save photos."
+      },
+      "bundleIdentifier": "janus.com"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/janus.png",
         "backgroundColor": "#FFFFFF"
       },
-      "config":{
-          "googleMaps": {
-            "apiKey": "AIzaSyBTqaK-x94IAYwH8aPbrnZ_azsjDoc4C8g"
-          }
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAAVvrfyRaRFBLMqDCIzw2O-qipJWHExHM"
+        }
       },
-      "package": "janus.com"
+      "package": "janus.com",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_MEDIA_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/janus.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "46279cde-5588-454d-bda4-074e0fb78fc9"
+      }
     }
   }
 }

@@ -19,7 +19,7 @@ const Activities = ({componentName, isActivitiesOpened, setIsActivitiesOpened}) 
     useEffect(() => {
         const activitiesFetcher = async () => {
             try {
-                const {data} = await axios.get(`https://janus-server-side.herokuapp.com/activities/${componentName}`);
+                const {data} = await axios.get(`https://janus-server-api.herokuapp.com/activities/${componentName}`);
                 setActivities(data.sort(
                     (a, b) => {
                         return new Date(b.date) - new Date(a.date);

@@ -16,7 +16,7 @@ const Components = ({buildingCode, isComponentsOpened, setIsComponentsOpened}) =
     useEffect(() => {
         const componentsFetcher = async () => {
             try {
-                const res = await axios.get(`https://janus-server-side.herokuapp.com/components/${buildingCode}`);
+                const res = await axios.get(`https://janus-server-api.herokuapp.com/components/${buildingCode}`);
                 setComponents(res.data);
             } catch (err) {
                 console.log(err);

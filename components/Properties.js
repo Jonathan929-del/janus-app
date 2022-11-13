@@ -16,7 +16,7 @@ const Properties = () => {
     useEffect(() => {
         const propertiesFetcher = async () => {
             axios
-                .get('https://janus-server-side.herokuapp.com/properties')
+                .get('https://janus-server-api.herokuapp.com/properties')
                 .then((res) => {
                     setProperties(res.data.sort(
                         (a, b) => {

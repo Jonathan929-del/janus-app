@@ -3,8 +3,9 @@ import axios from 'axios';
 import moment from 'moment';
 import Camera from './Camera';
 import {useState, useEffect} from 'react';
+import ActivityCamera from './ActivityCamera';
 import IonIcon from 'react-native-vector-icons/Ionicons';
-import {Modal, Text, StyleSheet, View, Pressable, TextInput, TouchableOpacity, ScrollView} from 'react-native';
+import {Modal, Text, StyleSheet, View, Pressable, TextInput, TouchableOpacity, ScrollView, ImageBackground, Image, SafeAreaView} from 'react-native';
 
 
 // Main Function
@@ -36,7 +37,7 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
         setIsCameraOpened(false);
         const component_code = data.substring(1);
         try {
-            const res = await axios.get(`https://janus-server-side.herokuapp.com/components/component/${component_code}`);
+            const res = await axios.get(`https://janus-server-api.herokuapp.com/components/component/${component_code}`);
             setComponent(res.data);
             setComponentCode((res.data.component_code));
         } catch (err) {
@@ -56,6 +57,9 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
     // Posting activity
     const activityPoster = async () => {
         try {
+
+
+            // Posting activity
             const input = {
                 date:new Date(),
                 user:signature,
@@ -77,26 +81,117 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
                 changed_by:'',
                 change_date:''
             }
-            const res = await axios.post(`https://janus-server-side.herokuapp.com/activities`, input);
+            await axios.post('https://janus-server-api.herokuapp.com/activities', input);
+
+
+            // Uploading image
+            const base64Img = `data:image/jpg;base64,${capturedImage.base64}`;
+            const apiUrl = 'https://api.cloudinary.com/v1_1/jobook/image/upload';
+            const data = {
+                file: base64Img,
+                upload_preset: 'janusimages',
+                public_id:componentCode === '' ? componentName : componentCode,
+                folder:'janus'
+            };
+            fetch(apiUrl,
+                {
+                    body: JSON.stringify(data),
+                    headers: {
+                        'content-type': 'application/json'
+                    },
+                    method: 'POST'
+                }
+            ).then(async response => {
+                let data = await response.json();
+            })
+            .catch(err => {
+                alert('Cannot upload');
+            });
+            
+
+            // Updating component
+            const today = new Date();
+            let nextDate =  new Date();
+            nextDate.setDate(today.getDate() + 183);
+            await axios.put(`https://janus-server-api.herokuapp.com/components/component-code/${componentName}`, {
+                maintenance_lastest_date:today,
+                maintenance_next_date:nextDate
+            });
+
+
+            // Deleting notification
+            await axios.delete(`https://janus-server-api.herokuapp.com/notifications/${componentName}`);
+
+
+            // Setting off page
             setScanned(false);
             setComponentCode('');
             setDescription('');
             setComponent({});
             setSelectedTask('Tillsyn');
             setIsActivityRegistryOpened(false);
+
+
         } catch (err) {
-            console.log(err.message);
+            console.log(err);
         }
     };
 
 
-    // Fetching user
+    // Opening camera
+    const [capturedImage, setCapturedImage] = useState('');
+    const [isActivityCameraOpened, setIsActivityCameraOpened] = useState(false);
+
+
+    // Exit button handler
+    const exitButtonHandler = () => {
+        setCapturedImage();
+        setIsActivityRegistryOpened(false);
+    };
+
+
+    // Save image handler
+    const imageSaver = async () => {
+        try {
+            const base64Img = `data:image/jpg;base64,${capturedImage.base64}`;
+            const apiUrl = 'https://api.cloudinary.com/v1_1/jobook/image/upload';
+            const data = {
+                file: base64Img,
+                upload_preset: 'janusimages',
+                public_id:componentCode === '' ? componentName : componentCode,
+                folder:'janus'
+            };
+            fetch(apiUrl,
+                {
+                    body: JSON.stringify(data),
+                    headers: {
+                        'content-type': 'application/json'
+                    },
+                    method: 'POST'
+                })
+                .then(async response => {
+                    let data = await response.json();
+                    if (data.secure_url) {
+                        alert('Upload successful');
+                    }
+                })
+                .catch(err => {
+                    alert('Cannot upload');
+                });
+            console.log('clciked');
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+
+    // Use effect
     useEffect(() => {
         const userFetcher = async () => {
             try {
-                const res = await axios.get('https://janus-server-side.herokuapp.com/users');
+                const res = await axios.get('https://janus-server-api.herokuapp.com/users');
                 setSignature(res.data[0].user);
-                const componentRes = await axios.get(`https://janus-server-side.herokuapp.com/components/component/${componentName}`);
+                const componentRes = await axios.get(`https://janus-server-api.herokuapp.com/components/component/${componentName}`);
                 componentName && setComponent(componentRes.data);
                 componentName && setComponentCode((componentRes.data.component_code));
             } catch (err) {
@@ -127,9 +222,14 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
                 handleBarCodeScanned={handleBarCodeScanned}
                 setScanned={setScanned}
             />
+            <ActivityCamera
+                isActivityCameraOpened={isActivityCameraOpened}
+                setIsActivityCameraOpened={setIsActivityCameraOpened}
+                setCapturedImage={setCapturedImage}
+            />
             <View style={styles.container}>
                 <View style={styles.topbar}>
-                    <Pressable onPress={() => setIsActivityRegistryOpened(false)}>
+                    <Pressable onPress={exitButtonHandler}>
                         <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
                     </Pressable>
                     <Text style={styles.header}>{componentName ? componentName : 'Activity Form'}</Text>
@@ -182,12 +282,26 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
                                 </View>
                             </View>
                         </View>
-                        <View style={styles.item}>
-                            <View style={styles.cameraContainer}>
-                                <IonIcon name='camera' size={30} color='#5f6368'/>
-                            </View>
-                        </View>
-                        <View style={styles.item}>
+                        {capturedImage !== '' ?
+                                <SafeAreaView
+                                    style={{height:300, display:'flex', width:'80%', marginTop:30}}
+                                >
+                                    <Image
+                                        source={{uri:capturedImage?.uri}}
+                                        style={{width:'100%', height:'100%'}}
+                                    />
+                                    <Pressable onPress={() => setCapturedImage('')} style={styles.imageCloseButton}>
+                                        <Text>X</Text>
+                                    </Pressable>
+                                </SafeAreaView>
+                            :
+                                <Pressable style={styles.item} onPress={() => setIsActivityCameraOpened(true)}>
+                                    <View style={styles.cameraContainer}>
+                                        <IonIcon name='camera' size={30} color='#5f6368'/>
+                                    </View>
+                                </Pressable>
+                        }
+                        <View style={styles.descItem}>
                             <Text style={styles.labelText}>Description / Remark:</Text>
                             <View style={styles.fieldContainer}>
                                 <TextInput style={styles.singleInput} value={description} onChangeText={e => descriptionHandler(e)}/>
@@ -280,6 +394,10 @@ const styles = StyleSheet.create({
     item:{
         width:'85%',
         marginTop:20
+    },
+    descItem:{
+        width:'85%',
+        marginTop:40   
     },
     button:{
         width:'47%',
@@ -380,6 +498,15 @@ const styles = StyleSheet.create({
         fontSize:14,
         color:'#fff',
         marginRight:5
+    },
+    imageCloseButton:{
+        top:10,
+        right:10,
+        borderRadius:50,
+        paddingVertical:10,
+        paddingHorizontal:15,
+        position:'absolute',
+        backgroundColor:'#fff'
     }
 });
 

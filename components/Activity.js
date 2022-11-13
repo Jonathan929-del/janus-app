@@ -14,7 +14,7 @@ const Activity = ({isActivityOpened, setIsActivityOpened, activityId}) => {
   const [activity, setActivity] = useState();
   useEffect(() => {
     const activityFetcher = async () => {
-      const res = await axios.get(`https://janus-server-side.herokuapp.com/activities/activity/${activityId}`);
+      const res = await axios.get(`https://janus-server-api.herokuapp.com/activities/activity/${activityId}`);
       setActivity(res.data);
     };
     activityFetcher();

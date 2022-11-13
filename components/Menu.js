@@ -1,7 +1,9 @@
 // Imports
+import NearMe from './NearMe';
 import {useState} from 'react';
+import MyTasksModal from './MyTasksModal';
 import ActivityRegistry from './ActivityRegistry';
-import IonIcon from 'react-native-vector-icons/Ionicons';
+import NotificationsModal from './NotificationsModal';
 import {View, StyleSheet, Text, Pressable, ScrollView, Image} from 'react-native';
 
 
@@ -10,9 +12,19 @@ const Menu = ({navigation}) => {
 
     // Activity Registry opener
     const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
-    const activityRegistryOpener = () => {
-        setIsActivityRegistryOpened(true);
-    };
+
+
+    // Notifications opener
+    const [isNotificationsOpened, setIsNotificationsOpened] = useState(false);
+
+
+    // My tasks opener
+    const [isMyTasksOpened, setIsMyTasksOpened] = useState(false);
+
+
+    // Near me opener
+    const [isNearMeOpened, setIsNearMeOpened] = useState(false);
+
 
     return (
         <ScrollView style={styles.container}>
@@ -20,49 +32,56 @@ const Menu = ({navigation}) => {
                 isActivityRegistryOpened={isActivityRegistryOpened}
                 setIsActivityRegistryOpened={setIsActivityRegistryOpened}
             />
-            <Pressable style={styles.itemContainer} onPress={activityRegistryOpener}>
+            <NotificationsModal
+                isNotificationsOpened={isNotificationsOpened}
+                setIsNotificationsOpened={setIsNotificationsOpened}
+            />
+            <MyTasksModal
+                isMyTasksOpened={isMyTasksOpened}
+                setIsMyTasksOpened={setIsMyTasksOpened}
+            />
+            <NearMe
+                isNearMeOpened={isNearMeOpened}
+                setIsNearMeOpened={setIsNearMeOpened}
+            />
+            <Pressable style={styles.itemContainer} onPress={() => setIsActivityRegistryOpened(true)}>
                 <View>
-                    <IonIcon name='barcode-outline' size={80}/>
+                    <Image source={require('../assets/images/Barcode.png')} style={styles.tasksImg}/>
                 </View>
                 <View>
                     <Text style={styles.text}>Barcode/NFC</Text>
-                    <Text>1</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer}>
+            <Pressable style={styles.itemContainer} onPress={() => setIsMyTasksOpened(true)}>
                 <View>
-                    <IonIcon name='barcode-outline' size={80}/>
+                    <Image source={require('../assets/images/MyTasks.png')} style={styles.tasksImg}/>
                 </View>
                 <View>
                     <Text style={styles.text}>My Tasks</Text>
-                    <Text>1</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer}>
+            <Pressable style={styles.itemContainer} onPress={() => setIsNearMeOpened(true)}>
                 <View>
-                    <IonIcon name='barcode-outline' size={80}/>
+                    <Image source={require('../assets/images/NearMe.png')} style={styles.tasksImg}/>
                 </View>
                 <View>
                     <Text style={styles.text}>Near Me</Text>
-                    <Text>1</Text>
                 </View>
             </Pressable>
             <Pressable style={styles.itemContainer} onPress={() => navigation.navigate('Properties')}>
                 <View>
-                    <Image source={require('../assets/images/Houses.png')} style={styles.housesImg}/>
+                    <Image source={require('../assets/images/MyProperties.png')} style={styles.tasksImg}/>
                 </View>
                 <View>
                     <Text style={styles.text}>My Properties</Text>
-                    <Text>4</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer}>
+            <Pressable style={styles.itemContainer} onPress={() => setIsNotificationsOpened(true)}>
                 <View>
-                    <IonIcon name='notifications' size={60}/>
+                    <Image source={require('../assets/images/Notifications.png')} style={styles.tasksImg}/>
                 </View>
                 <View>
                     <Text style={styles.text}>Notifications</Text>
-                    <Text>4</Text>
                 </View>
             </Pressable>
         </ScrollView>
@@ -101,6 +120,12 @@ const styles = StyleSheet.create({
     housesImg:{
         width:70,
         height:35,
+        marginLeft:0,
+        marginRight:10
+    },
+    tasksImg:{
+        width:70,
+        height:70,
         marginLeft:0,
         marginRight:10
     },

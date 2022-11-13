@@ -16,8 +16,8 @@ const Map = () => {
   useEffect(() => {
     const propertiesFetcher = async () => {
       try {
-        const res = await axios.get('https://janus-server-side.herokuapp.com/properties');
-        setProperties(res.data.filter(property => property?.latitude !== ''));
+        const res = await axios.get('https://janus-server-api.herokuapp.com/properties');
+        setProperties(res.data.filter(property => property?.latitude !== undefined));
       } catch (err) {
         console.log(err);
       }
@@ -29,7 +29,7 @@ const Map = () => {
   // Property fetching
   const propertyFetcher = async latitude => {
     try {
-      const res = await axios.get(`https://janus-server-side.herokuapp.com/properties/${latitude}`);
+      const res = await axios.get(`https://janus-server-api.herokuapp.com/properties/${latitude}`);
       setSelectedProperty(res.data);
     } catch (err) {
       console.log(err);
@@ -61,7 +61,7 @@ const Map = () => {
           longitudeDelta: 0.01,
         }}
       >
-        {/* {properties[0]?.property_code && properties.map(property => (
+        {properties[0]?.property_code && properties.map(property => (
             <Marker 
               key={Math.floor(Math.random() * 1000000)}
               coordinate={{
@@ -70,7 +70,7 @@ const Map = () => {
               }}
               onPress={() => propertyFetcher(property.latitude)}
             />
-          ))} */}
+          ))}
       </MapView>
       <Pressable style={styles.itemContainer} onPress={() => buildingsOpener(selectedProperty.property_code)}>
           <View style={styles.leftSection}>
@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     flex:1,
     alignItems:'center',
     position:'relative',
+    backgroundColor:'#fff',
     justifyContent:'center'
   },
   map:{

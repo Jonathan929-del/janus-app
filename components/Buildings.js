@@ -25,7 +25,7 @@ const Buildings = ({propertyCode, isBuildingsOpened, setIsBuildingsOpened}) => {
     useEffect(() => {
         const buildingsFetcher = async () => {
             try {
-                const res = await axios.get(`https://janus-server-side.herokuapp.com/buildings/${propertyCode}`);
+                const res = await axios.get(`https://janus-server-api.herokuapp.com/buildings/${propertyCode}`);
                 setBuildings(res.data);
             } catch (err) {
                 console.log(err);
