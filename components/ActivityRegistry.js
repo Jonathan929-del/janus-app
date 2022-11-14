@@ -86,12 +86,12 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
 
             // Uploading image
             const base64Img = `data:image/jpg;base64,${capturedImage.base64}`;
-            const apiUrl = 'https://api.cloudinary.com/v1_1/jobook/image/upload';
+            const apiUrl = 'https://api.cloudinary.com/v1_1/dzn4fecpr/image/upload';
             const data = {
                 file: base64Img,
-                upload_preset: 'janusimages',
+                upload_preset: 'janus_attendance',
                 public_id:componentCode === '' ? componentName : componentCode,
-                folder:'janus'
+                folder:'janus_images'
             };
             fetch(apiUrl,
                 {
@@ -148,41 +148,6 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
         setCapturedImage();
         setIsActivityRegistryOpened(false);
     };
-
-
-    // Save image handler
-    const imageSaver = async () => {
-        try {
-            const base64Img = `data:image/jpg;base64,${capturedImage.base64}`;
-            const apiUrl = 'https://api.cloudinary.com/v1_1/jobook/image/upload';
-            const data = {
-                file: base64Img,
-                upload_preset: 'janusimages',
-                public_id:componentCode === '' ? componentName : componentCode,
-                folder:'janus'
-            };
-            fetch(apiUrl,
-                {
-                    body: JSON.stringify(data),
-                    headers: {
-                        'content-type': 'application/json'
-                    },
-                    method: 'POST'
-                })
-                .then(async response => {
-                    let data = await response.json();
-                    if (data.secure_url) {
-                        alert('Upload successful');
-                    }
-                })
-                .catch(err => {
-                    alert('Cannot upload');
-                });
-            console.log('clciked');
-        } catch (err) {
-            console.log(err);
-        }
-    }
 
 
     // Use effect
