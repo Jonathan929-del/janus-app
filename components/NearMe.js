@@ -59,6 +59,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
     // Selected component
     const [index, setIndex] = useState(0);
     const [setOfComponents, setSetOfComponents] = useState({});
+    const [componentsLength, setComponentsLength] = useState();
     const [selectedBuildingComponent, setSelectedBuildingComponent] = useState({});
     const selectedBuildingHandler = async buildingCode => {
         try {
@@ -76,25 +77,19 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             const componentsIds = setOfComponents.map(component => component.component_code);
             setIndex(index < componentsIds.length - 1 ? index + 1 : 0);
             setSelectedBuildingComponent(setOfComponents[index]);
-        }, 200)
+        }, 200);
     };
 
 
     // Data fetcher
     const dataFetcher = async () => {
         try {
-
-
             // Notificaionts fetching
             const res = await axios.get('https://janus-server-api.herokuapp.com/notifications/');
             const presentNotifications = res.data !== undefined ? res.data.filter(notification => notification[0]?.building_code !== undefined) : '';
-
-
             // Buildings fetching
             const buildingsrRes = await axios.get('https://janus-server-api.herokuapp.com/buildings/');
             const buildingsWithCoordinates = buildingsrRes.data.filter(building => building?.latitude !== undefined);
-            
-            
             // Missed activities
             const notificationsIds = presentNotifications?.map(notification => notification[0].building_code);
             const filteredNotificationsIds = notificationsIds?.filter((item,index) => notificationsIds.indexOf(item) === index);
@@ -102,8 +97,6 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                 return filteredNotificationsIds?.includes(building.building_code);
             });
             setMissedActivities(notificationsComponentsBuildings);
-            
-            
             // Upcoming activities
             const upcomingRes = await axios.get('https://janus-server-api.herokuapp.com/components/');
             const today = new Date();
@@ -121,8 +114,6 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                 return missedActivitiesFilter.includes(building.building_code);
             });
             setUpcomingActivities(componentsBuildings);
-            
-            
             // All buildings
             const otherBuildings = componentsBuildings.concat(notificationsComponentsBuildings);
             const otherBuildingIds = otherBuildings.map(building => building.building_code);
@@ -131,8 +122,6 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                 return !filteredOtherBuildingsIds.includes(building.building_code);
             });
             setAllBuildings(allComponentsBuildings);
-
-
         } catch (err) {
             console.log(err);
         }
