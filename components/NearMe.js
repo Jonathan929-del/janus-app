@@ -19,17 +19,17 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
 
     // Missed activities
     const [missedActivities, setMissedActivities] = useState([{}]);
-    const [missedActivitiesCom, setMissedActivitiesCom] = useState();
+    const [missedActivitiesRequests, setMissedActivitiesRequests] = useState([]);
 
 
     // Upcoming activities
     const [upcomingActivities, setUpcomingActivities] = useState([{}]);
-    const [upcomingActivitiesCom, setUpcomingActivitiesCom] = useState();
+    const [upcomingActivitiesRequests, setUpcomingActivitiesRequests] = useState([]);
 
 
     // All building filter
     const [allBuildings, setAllBuildings] = useState([{}]);
-    const [allBuildingsCom, setAllBuildingsCom] = useState();
+    const [allBuildingsRequests, setAllBuildingsRequests] = useState([]);
 
 
     // Opening activity registry
@@ -62,6 +62,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
     // Selected component
     const [index, setIndex] = useState(0);
     const [setOfComponents, setSetOfComponents] = useState({});
+    const [componentsLength, setComponentsLength] = useState();
     const [selectedBuildingComponent, setSelectedBuildingComponent] = useState({});
     const selectedBuildingHandler = async buildingCode => {
         try {
@@ -69,7 +70,6 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             const componentsWithDates = res.data.filter(component => component.maintenance_next_date !== undefined || component.attendance_next_date !== undefined);
             setSetOfComponents(componentsWithDates);
             setSelectedBuildingComponent(componentsWithDates[0]);
-            dataFetcher(setOfComponents.length);
         } catch (err) {
             console.log(err);
         }  
@@ -85,22 +85,58 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
 
 
     // Data fetcher
-    const dataFetcher = async length => {
+    const dataFetcher = async () => {
         try {
-            console.log(length);
+
+
             // Notificaionts fetching
             const res = await axios.get('https://janus-server-api.herokuapp.com/notifications/');
             const presentNotifications = res.data !== undefined ? res.data.filter(notification => notification[0]?.building_code !== undefined) : '';
+            const notificationsIds = presentNotifications?.map(notification => notification[0].building_code);
+            const filteredNotificationsIds = notificationsIds?.filter((item,index) => notificationsIds.indexOf(item) === index);
+
+
             // Buildings fetching
             const buildingsrRes = await axios.get('https://janus-server-api.herokuapp.com/buildings/');
             const buildingsWithCoordinates = buildingsrRes.data.filter(building => building?.latitude !== undefined);
+
+
             // Missed activities
-            const notificationsIds = presentNotifications?.map(notification => notification[0].building_code);
-            const filteredNotificationsIds = notificationsIds?.filter((item,index) => notificationsIds.indexOf(item) === index);
             const notificationsComponentsBuildings = buildingsWithCoordinates.filter(building => {
                 return filteredNotificationsIds?.includes(building.building_code);
             });
-            setMissedActivities(notificationsComponentsBuildings);
+            axios.all(
+                notificationsComponentsBuildings.map(building => {
+                    return axios.get(`https://janus-server-api.herokuapp.com/components/${building.building_code}`);
+                })
+            )
+            .then(axios.spread((...responses) => {
+                const newResponses = responses.map(components => {
+                    const newComponents = components.data.filter(component => {
+                        return component.maintenance_next_date !== undefined || component.attendance_next_date !== undefined;
+                    });
+                    return newComponents;
+                });
+                const newResponsesFilter = newResponses.filter(component => component[0]?.building_code !== undefined);
+                const buildingsData = newResponsesFilter.map(components => {
+                    return {
+                        componentsLength:components.length,
+                        buildingCode:components[0].building_code
+                    };
+                });
+                const newBuildings = notificationsComponentsBuildings.map(building => {
+                    const buildingMap = buildingsData.map(data => {
+                        const newBuilding = building.building_code === data.buildingCode ? {...building, buildingComponentsLength:data.componentsLength} : '';
+                        return newBuilding;
+                    });
+                    const filter = buildingMap.filter(item => item !== '');
+                    return filter[0];
+                });
+                const filteredBuildings = newBuildings.filter(building => building !== undefined);
+                setMissedActivities(filteredBuildings);
+            }));
+                
+
             // Upcoming activities
             const upcomingRes = await axios.get('https://janus-server-api.herokuapp.com/components/');
             const today = new Date();
@@ -117,7 +153,38 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             const componentsBuildings = buildingsWithCoordinates.filter(building => {
                 return missedActivitiesFilter.includes(building.building_code);
             });
-            setUpcomingActivities(componentsBuildings);
+            axios.all(
+                componentsBuildings.map(building => {
+                    return axios.get(`https://janus-server-api.herokuapp.com/components/${building.building_code}`);
+                })
+            )
+            .then(axios.spread((...responses) => {
+                const newResponses = responses.map(components => {
+                    const newComponents = components.data.filter(component => {
+                        return component.maintenance_next_date !== undefined || component.attendance_next_date !== undefined;
+                    });
+                    return newComponents;
+                });
+                const newResponsesFilter = newResponses.filter(component => component[0]?.building_code !== undefined);
+                const buildingsData = newResponsesFilter.map(components => {
+                    return {
+                        componentsLength:components.length,
+                        buildingCode:components[0].building_code
+                    };
+                });
+                const newBuildings = componentsBuildings.map(building => {
+                    const buildingMap = buildingsData.map(data => {
+                        const newBuilding = building.building_code === data.buildingCode ? {...building, buildingComponentsLength:data.componentsLength} : '';
+                        return newBuilding;
+                    });
+                    const filter = buildingMap.filter(item => item !== '');
+                    return filter[0];
+                });
+                const filteredBuildings = newBuildings.filter(building => building !== undefined);
+                setUpcomingActivities(filteredBuildings);
+            }));
+
+
             // All buildings
             const otherBuildings = componentsBuildings.concat(notificationsComponentsBuildings);
             const otherBuildingIds = otherBuildings.map(building => building.building_code);
@@ -125,52 +192,38 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             const allComponentsBuildings = buildingsWithCoordinates.filter(building => {
                 return !filteredOtherBuildingsIds.includes(building.building_code);
             });
-            setAllBuildings(allComponentsBuildings);
-            // Missed activities component
-            setMissedActivitiesCom(
-                missedActivities[0]._id ? missedActivities.map(activity =>
-                    <Marker
-                        onPress={() => selectedBuildingHandler(activity.building_code)}
-                        key={activity._id}
-                        coordinate={{
-                            latitude:activity?.latitude && activity?.latitude !== undefined ? JSON.parse(activity?.latitude) : '',
-                            longitude:activity?.longitude && activity?.longitude !== undefined ? JSON.parse(activity?.longitude) : ''
-                        }}
-                        pinColor='#f00'
-                        title={`${activity.building_code} ()`}
-                    />
-                ) : ''
-            );
-            // Upcoming activities com
-            setUpcomingActivitiesCom(
-                upcomingActivities[0]._id ? upcomingActivities.map(activity =>
-                    <Marker
-                        onPress={() => selectedBuildingHandler(activity.building_code)}
-                        key={activity._id}
-                        coordinate={{
-                            latitude:activity?.latitude !== undefined ? JSON.parse(activity?.latitude) : '',
-                            longitude:activity?.longitude !== undefined ? JSON.parse(activity?.longitude) : ''
-                        }}
-                        pinColor='orange'
-                        title={`${activity.building_code} ()`}
-                    />
-                ) : ''
-            );
-            // All buildings com
-            setAllBuildingsCom(
-                allBuildings[0]._id ? allBuildings.map(building =>
-                    <Marker
-                        onPress={() => selectedBuildingHandler(building.building_code)}
-                        key={building._id}
-                        coordinate={{
-                            latitude:building?.latitude !== undefined ? JSON.parse(building?.latitude) : '',
-                            longitude:building?.longitude !== undefined ? JSON.parse(building?.longitude) : ''
-                        }}
-                        pinColor='blue'
-                        title={`${building.building_code} ()`}
-                    />
-                ) : ''
-            );
+            axios.all(
+                allComponentsBuildings.map(building => {
+                    return axios.get(`https://janus-server-api.herokuapp.com/components/${building.building_code}`);
+                })
+            )
+            .then(axios.spread((...responses) => {
+                const newResponses = responses.map(components => {
+                    const newComponents = components.data.filter(component => {
+                        return component.maintenance_next_date !== undefined || component.attendance_next_date !== undefined;
+                    });
+                    return newComponents;
+                });
+                const newResponsesFilter = newResponses.filter(component => component[0]?.building_code !== undefined);
+                const buildingsData = newResponsesFilter.map(components => {
+                    return {
+                        componentsLength:components.length,
+                        buildingCode:components[0].building_code
+                    };
+                });
+                const newBuildings = allComponentsBuildings.map(building => {
+                    const buildingMap = buildingsData.map(data => {
+                        const newBuilding = building.building_code === data.buildingCode ? {...building, buildingComponentsLength:data.componentsLength} : '';
+                        return newBuilding;
+                    });
+                    const filter = buildingMap.filter(item => item !== '');
+                    return filter[0];
+                });
+                const filteredBuildings = newBuildings.filter(building => building !== undefined);
+                setAllBuildings(filteredBuildings);
+            }));
+
+
         } catch (err) {
             console.log(err);
         }
@@ -239,15 +292,54 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                     fillColor='#000'
                     strokeWidth={10}
                 />
-                {missedActivitiesCom}
-                {upcomingActivitiesCom}
-                {allBuildingsCom}
+                {
+                    missedActivities[0]._id ? missedActivities.map(activity =>
+                        <Marker
+                            onPress={() => selectedBuildingHandler(activity.building_code)}
+                            key={activity._id}
+                            coordinate={{
+                                latitude:activity?.latitude && activity?.latitude !== undefined ? JSON.parse(activity?.latitude) : '',
+                                longitude:activity?.longitude && activity?.longitude !== undefined ? JSON.parse(activity?.longitude) : ''
+                            }}
+                            pinColor='#f00'
+                            title={`${activity.building_code} (${activity.buildingComponentsLength})`}
+                        />
+                    ) : ''
+                }
+                {
+                    upcomingActivities[0]._id ? upcomingActivities.map(activity =>
+                        <Marker
+                            onPress={() => selectedBuildingHandler(activity.building_code)}
+                            key={activity._id}
+                            coordinate={{
+                                latitude:activity?.latitude !== undefined ? JSON.parse(activity?.latitude) : '',
+                                longitude:activity?.longitude !== undefined ? JSON.parse(activity?.longitude) : ''
+                            }}
+                            pinColor='orange'
+                            title={`${activity.building_code} (${activity.buildingComponentsLength})`}
+                        />
+                    ) : ''
+                }
+                {
+                    allBuildings[0]._id ? allBuildings.map(building =>
+                        <Marker
+                            onPress={() => selectedBuildingHandler(building.building_code)}
+                            key={building._id}
+                            coordinate={{
+                                latitude:building?.latitude !== undefined ? JSON.parse(building?.latitude) : '',
+                                longitude:building?.longitude !== undefined ? JSON.parse(building?.longitude) : ''
+                            }}
+                            pinColor='blue'
+                            title={`${building.building_code} (${building.buildingComponentsLength})`}
+                        />
+                    ) : ''
+                }
             </MapView>
             {selectedBuildingComponent?.building_code ?
                 <Animated.View style={[styles.itemContent, {opacity:fadeAnim}]}>
                     <View>
                         <Text>{selectedBuildingComponent?.building_code}</Text>
-                        <Text>{selectedBuildingComponent?.component_code}</Text>
+                        <Text>{`${selectedBuildingComponent?.component_code} ${setOfComponents.length > 1 ? `(${setOfComponents.indexOf(selectedBuildingComponent) + 1})` : ''}`}</Text>
                         <Text>
                                 {selectedBuildingComponent?.maintenance_next_date !== undefined
                                         ? selectedBuildingComponent?.attendance_next_date !== undefined
