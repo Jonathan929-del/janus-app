@@ -1,28 +1,34 @@
 // Imports
 import axios from 'axios';
 import moment from 'moment';
+import Texts from './Texts';
 import Camera from './Camera';
 import {useState, useEffect} from 'react';
 import ActivityCamera from './ActivityCamera';
-import IonIcon from 'react-native-vector-icons/Ionicons';
-import {Modal, Text, StyleSheet, View, Pressable, TextInput, TouchableOpacity, ScrollView, ImageBackground, Image, SafeAreaView} from 'react-native';
+import {useTheme} from '../src/theme/themeProvider';
+import {Modal, Text, StyleSheet, View, Pressable, TextInput, TouchableOpacity, ScrollView,  Image, SafeAreaView} from 'react-native';
 
 
 // Main Function
-const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivityRegistryOpened}) => {
+const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivityRegistryOpened, isActivityPreview, setIsActivityPreview, selectedActivity}) => {
+
+
+    // Theme
+    const {dark, theme} = useTheme();
 
 
     // Form
+    const [image, setImage] = useState('');
     const [component, setComponent] = useState({});
     const [description, setDescription] = useState('');
     const [componentCode, setComponentCode] = useState('');
-    const [selectedTask, setSelectedTask] = useState('Tillsyn');
+    const [selectedTask, setSelectedTask] = useState(isActivityPreview ? selectedActivity?.activity : 'Tillsyn');
     const [signature, setSignature] = useState('');
     const descriptionHandler = text => {
         setDescription(text);
     }
     const taskToggler = task => {
-        setSelectedTask(task);
+        setSelectedTask(isActivityPreview ? selectedActivity?.activity : task);
     }
     const componentCodeFieldHandler = text => {
         setComponentCode(text);
@@ -37,7 +43,7 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
         setIsCameraOpened(false);
         const component_code = data.substring(1);
         try {
-            const res = await axios.get(`https://janus-server-api.herokuapp.com/components/component/${component_code}`);
+            const res = await axios.get(`https://janus-backend-api.herokuapp.com/components/component/${component_code}`);
             setComponent(res.data);
             setComponentCode((res.data.component_code));
         } catch (err) {
@@ -57,6 +63,10 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
     // Posting activity
     const activityPoster = async () => {
         try {
+
+
+            // Creating random number
+            const randomNumber = Math.floor(Math.random() * 1000000);
 
 
             // Posting activity
@@ -79,9 +89,11 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
                 component:component.component_code,
                 unique_index_component:'',
                 changed_by:'',
-                change_date:''
+                change_date:'',
+                img:JSON.stringify(randomNumber)
             }
-            await axios.post('https://janus-server-api.herokuapp.com/activities', input);
+            const res = await axios.post('https://janus-backend-api.herokuapp.com/activities', input);
+            console.log(res.data);
 
 
             // Uploading image
@@ -90,7 +102,7 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
             const data = {
                 file: base64Img,
                 upload_preset: 'janus_attendance',
-                public_id:componentCode === '' ? componentName : componentCode,
+                public_id:JSON.stringify(randomNumber),
                 folder:'janus_images'
             };
             fetch(apiUrl,
@@ -108,27 +120,28 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
                 alert('Cannot upload');
             });
             
-
+            
             // Updating component
             const today = new Date();
             let nextDate =  new Date();
             nextDate.setDate(today.getDate() + 183);
-            await axios.put(`https://janus-server-api.herokuapp.com/components/component-code/${componentName}`, {
+            await axios.put(`https://janus-backend-api.herokuapp.com/components/component-code/${componentName}`, {
                 maintenance_lastest_date:today,
                 maintenance_next_date:nextDate
             });
 
+            
 
             // Deleting notification
-            await axios.delete(`https://janus-server-api.herokuapp.com/notifications/${componentName}`);
-
+            await axios.delete(`https://janus-backend-api.herokuapp.com/notifications/${componentName}`);
+            
 
             // Setting off page
-            setScanned(false);
             setComponentCode('');
             setDescription('');
             setComponent({});
             setSelectedTask('Tillsyn');
+            setIsCameraOpened(false);
             setIsActivityRegistryOpened(false);
 
 
@@ -145,18 +158,21 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
 
     // Exit button handler
     const exitButtonHandler = () => {
-        setCapturedImage();
+        setCapturedImage('');
         setIsActivityRegistryOpened(false);
+        isActivityPreview && setIsActivityPreview(false);
+        setSelectedTask('');
     };
 
 
     // Use effect
     useEffect(() => {
         const userFetcher = async () => {
+            setSelectedTask(isActivityPreview ? selectedActivity?.activity : 'Tillsyn');
             try {
-                const res = await axios.get('https://janus-server-api.herokuapp.com/users');
+                const res = await axios.get('https://janus-backend-api.herokuapp.com/users');
                 setSignature(res.data[0].user);
-                const componentRes = await axios.get(`https://janus-server-api.herokuapp.com/components/component/${componentName}`);
+                const componentRes = await axios.get(`https://janus-backend-api.herokuapp.com/components/component/${componentName}`);
                 componentName && setComponent(componentRes.data);
                 componentName && setComponentCode((componentRes.data.component_code));
             } catch (err) {
@@ -164,7 +180,17 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
             }
         };
         userFetcher();
-    }, []);
+        const imageFetcher = async () => {
+            try {
+                const res = await axios.get('https://janus-backend-api.herokuapp.com/images');
+                const resource = res.data.resources.filter(resource => resource.filename === selectedActivity.img);
+                setImage(resource[0].url);
+            } catch (err) {
+                console.log(err);
+            }
+        };
+        imageFetcher();
+    }, [isActivityPreview, selectedActivity]);
 
 
     // Closing form
@@ -174,8 +200,15 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
         setComponentCode('');
         setDescription('');
         setComponent({});
+        setCapturedImage('');
+        isActivityPreview && setIsActivityPreview(false);
+        setImage('');
         setIsActivityRegistryOpened(false);
     };
+
+
+    // Opening texts
+    const [isTextsOpened, setIsTextsOpened] = useState(false);
 
 
     return (
@@ -192,41 +225,70 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
                 setIsActivityCameraOpened={setIsActivityCameraOpened}
                 setCapturedImage={setCapturedImage}
             />
-            <View style={styles.container}>
-                <View style={styles.topbar}>
-                    <Pressable onPress={exitButtonHandler}>
-                        <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
-                    </Pressable>
-                    <Text style={styles.header}>{componentName ? componentName : 'Activity Form'}</Text>
-                </View>
+            <Texts
+                isTextsOpened={isTextsOpened}
+                setIsTextsOpened={setIsTextsOpened}
+                component={component}
+            />
+            <View style={[styles.container, {backgroundColor:dark ? theme.elementsBackground : '#f5f5f5'}]}>
+                {/* {
+                    !isActivityPreview &&
+                    <View style={[styles.topbar, {backgroundColor:theme.screenBackground, borderColor:theme.text}]}>
+                        <Pressable onPress={exitButtonHandler}>
+                            <IonIcon name='arrow-back' style={styles.arrowBackIcon} color={theme.text}/>
+                        </Pressable>
+                        <Text style={[styles.header, {color:theme.text, fontFamily:theme.font}]}>{componentName ? componentName : 'Activity Form'}</Text>
+                    </View>
+                } */}
                 <ScrollView>
-                    <View style={styles.content}>
+                    <View style={[styles.content, {backgroundColor:theme.elementsBackground}]}>
                         {!componentName && <View style={styles.item}>
-                            <View style={styles.fieldContainer}>
-                                <TextInput style={styles.input} value={componentCode} onChangeText={e => componentCodeFieldHandler(e)}/>
-                                <TouchableOpacity style={styles.scanButton} onPress={cameraOpener}>
-                                    <Text style={styles.scanButtonText}>{scanned ? 'Scan Again' : 'Scan Barcode'}</Text>
-                                    <IonIcon name='barcode-outline' color='#fff' size={25}/>
+                            <View style={styles.inputFieldContainer}>
+                                <TextInput style={[styles.input, {backgroundColor:'#D9D9D9', borderColor:dark ? '#35C7FB' : '#000', fontFamily:theme.font}]} value={componentCode} onChangeText={e => componentCodeFieldHandler(e)}/>
+                                <TouchableOpacity style={[styles.scanButton, {backgroundColor:dark ? '#35C7FB' : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#000'}]} onPress={cameraOpener}>
+                                    {
+                                        dark
+                                        ? <Image source={require('../assets/images/RegistryBarcodeDark.png')} style={styles.scanImage}/>
+                                        : <Image source={require('../assets/images/RegistryBarcode.png')} style={styles.scanImage}/>
+                                    }
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.bookButton, {backgroundColor:dark ? '#000' : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#000'}]} onPress={() => setIsTextsOpened(true)}>
+                                    {
+                                        dark
+                                        ? <Image source={require('../assets/images/BookDark.png')} style={styles.scanImage}/>
+                                        : <Image source={require('../assets/images/Book.png')} style={styles.scanImage}/>
+                                    }
                                 </TouchableOpacity>
                             </View>
                         </View>}
-                        <View style={styles.item}>
+                        <View style={[styles.labelItem, {borderColor:dark ? '#35C7FB' : '#000'}]}>
                             <View style={styles.labelFieldContainer}>
-                                <Text style={styles.labelText}>Label:</Text>
-                                <Text style={styles.labelContent}>{component?.name}</Text>
+                                <Text style={[styles.labelText, {color:theme.text, fontFamily:theme.font}]}>Label:</Text>
+                                {
+                                    componentName
+                                    ? <Text style={[styles.labelContent, {color:theme.text, fontFamily:theme.font}]}>{component?.name}</Text>
+                                    : <Text style={[styles.labelContent, {color:'red', fontFamily:theme.font}]}>Component missing.</Text>
+                                }
                             </View>
                         </View>
-                        <View style={styles.item}>
-                            <Text style={styles.labelText}>Task:</Text>
+                        <View style={styles.taskItem}>
                             <View style={styles.fieldContainer}>
-                                <TouchableOpacity style={selectedTask === 'Tillsyn' ? styles.button : styles.unSelectedButton} onPress={() => taskToggler('Tillsyn')}>
-                                    <Text style={selectedTask === 'Tillsyn' ? styles.buttonText : styles.unSelectedButtonText}>
-                                        Tillsyn
+                                <TouchableOpacity style={selectedTask === 'Tillsyn' ? styles.button : [styles.unSelectedButton, {backgroundColor:dark ? '#000' : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#D9D9D9'}]} onPress={() => taskToggler('Tillsyn')}>
+                                    {
+                                        selectedTask === 'Tillsyn' &&
+                                        <Image source={require('../assets/images/Check.png')} style={{height:20, width:20, top:10, right:10, position:'absolute'}}/>
+                                    }
+                                    <Text style={selectedTask === 'Tillsyn' ? styles.buttonText : [styles.unSelectedButtonText, {color:dark ? '#35C7FB' : '#333F50', fontFamily:theme.font}]}>
+                                        T
                                     </Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={selectedTask === 'Skötsel' ? styles.button : styles.unSelectedButton} onPress={() => taskToggler('Skötsel')}>
-                                    <Text style={selectedTask === 'Skötsel' ? styles.buttonText : styles.unSelectedButtonText}>
-                                        Skötsel
+                                <TouchableOpacity style={selectedTask === 'Skötsel' ? styles.button : [styles.unSelectedButton, {backgroundColor:dark ? '#000' : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#D9D9D9'}]} onPress={() => taskToggler('Skötsel')}>
+                                    {
+                                        selectedTask === 'Skötsel' &&
+                                        <Image source={require('../assets/images/Check.png')} style={{height:20, width:20, top:10, right:10, position:'absolute'}}/>
+                                    }
+                                    <Text style={selectedTask === 'Skötsel' ? styles.buttonText : [styles.unSelectedButtonText, {color:dark ? '#35C7FB' : '#333F50', fontFamily:theme.font}]}>
+                                        S
                                     </Text>
                                 </TouchableOpacity>
                             </View>
@@ -234,53 +296,93 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
                         <View style={styles.item}>
                             <View style={styles.dateSignatureContainer}>
                                 <View style={styles.inlineItem}>
-                                    <Text style={styles.labelText}>Date:</Text>
+                                    <Text style={[styles.labelText, {color:theme.text, fontFamily:theme.font}]}>User</Text>
                                     <View style={styles.fieldContainer}>
-                                        <TextInput style={styles.singleInput} value={moment(new Date()).format('YYYY-MM-DD')}/>
+                                        <TextInput style={[styles.singleInput, {backgroundColor:dark ? theme.elementsBackground : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#000', color:dark ? '#fff' : '#000', fontFamily:theme.font}]} value={signature}/>
                                     </View>
                                 </View>
                                 <View style={styles.inlineItem}>
-                                    <Text style={styles.labelText}>Signature:</Text>
+                                    <Text style={[styles.labelText, {color:theme.text, fontFamily:theme.font}]}>Date</Text>
                                     <View style={styles.fieldContainer}>
-                                        <TextInput style={styles.singleInput} value={signature}/>
+                                        <TextInput style={[styles.singleInput, {backgroundColor:dark ? theme.elementsBackground : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#000', color:dark ? '#fff' : '#000', fontFamily:theme.font}]} value={isActivityPreview ? moment(selectedActivity.date).format('YYYY-MM-DD') : moment(new Date()).format('YYYY-MM-DD')}/>
                                     </View>
                                 </View>
                             </View>
                         </View>
-                        {capturedImage !== '' ?
-                                <SafeAreaView
-                                    style={{height:300, display:'flex', width:'80%', marginTop:30}}
-                                >
-                                    <Image
-                                        source={{uri:capturedImage?.uri}}
-                                        style={{width:'100%', height:'100%'}}
-                                    />
-                                    <Pressable onPress={() => setCapturedImage('')} style={styles.imageCloseButton}>
-                                        <Text>X</Text>
-                                    </Pressable>
-                                </SafeAreaView>
-                            :
-                                <Pressable style={styles.item} onPress={() => setIsActivityCameraOpened(true)}>
-                                    <View style={styles.cameraContainer}>
-                                        <IonIcon name='camera' size={30} color='#5f6368'/>
-                                    </View>
-                                </Pressable>
-                        }
                         <View style={styles.descItem}>
-                            <Text style={styles.labelText}>Description / Remark:</Text>
+                            <Text style={[styles.labelText, {color:theme.text, fontFamily:theme.font}]}>Remark:</Text>
                             <View style={styles.fieldContainer}>
-                                <TextInput style={styles.singleInput} value={description} onChangeText={e => descriptionHandler(e)}/>
+                                {
+                                    isActivityPreview
+                                    ? <TextInput style={[styles.remarkInput, {backgroundColor:dark ? theme.elementsBackground : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#000', color:dark ? '#fff' : '#000', fontFamily:theme.font}]} value={selectedActivity.description === undefined ? '' : selectedActivity.description}/>
+                                    : <TextInput style={[styles.remarkInput, {backgroundColor:dark ? theme.elementsBackground : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#000', color:dark ? '#fff' : '#000', fontFamily:theme.font}]} value={description} onChangeText={e => descriptionHandler(e)}/>
+                                }
                             </View>
                         </View>
+                        {
+                            isActivityPreview
+                                ?   <SafeAreaView
+                                        style={{height:300, display:'flex', width:'80%', marginTop:30}}
+                                    >
+                                        <Image
+                                            source={{uri:image}}
+                                            style={{width:'100%', height:'100%'}}
+                                        />
+                                    </SafeAreaView>
+                                : capturedImage !== ''
+                                    ?
+                                        <SafeAreaView
+                                            style={{height:300, display:'flex', width:'80%', marginTop:30}}
+                                        >
+                                            <Image
+                                                source={{uri:capturedImage?.uri}}
+                                                style={{width:'100%', height:'100%'}}
+                                            />
+                                            <Pressable onPress={() => setCapturedImage('')} style={styles.imageCloseButton}>
+                                                <Text>X</Text>
+                                            </Pressable>
+                                        </SafeAreaView>
+                                    :
+                                        <Pressable style={styles.item} onPress={() => setIsActivityCameraOpened(true)}>
+                                            <Text style={[styles.labelText, {color:theme.text, fontFamily:theme.font}]}>Image</Text>
+                                            <View style={[styles.cameraContainer, {backgroundColor:dark ? theme.elementsBackground : '#D9D9D9', borderColor:dark ? '#35C7FB' : '#000'}]}>
+                                                {
+                                                    dark
+                                                    ? <Image source={require('../assets/images/CameraDark.png')} style={{height:40, width:40}}/>
+                                                    : <Image source={require('../assets/images/Camera.png')} style={{height:40, width:40}}/>
+                                                }
+                                            </View>
+                                        </Pressable>
+                        }
                     </View>
                 </ScrollView>
-                <View style={styles.bottomNav}>
-                    <Pressable style={styles.cancel} onPress={cancelButton}>
-                        <Text style={styles.cancelText}>cancel</Text>
-                    </Pressable>
-                    <Pressable style={styles.save} onPress={activityPoster}>
-                        <Text style={styles.saveText}>Save</Text>
-                    </Pressable>
+                <View style={[styles.bottomNav, {justifyContent:isActivityPreview ? 'center' : componentName !== undefined ? 'space-between' : componentCode !== '' ? 'space-between' : 'center', backgroundColor:dark ? '#000' : '#f5f5f5'}]}>
+                    {
+                        isActivityPreview
+                        ? <>
+                            <Pressable style={styles.save} onPress={cancelButton}>
+                                <Text style={[styles.saveText, {fontFamily:theme.font}]}>OK</Text>
+                            </Pressable>                        
+                        </>
+                        : <>
+                            {
+                                componentCode !== ''
+                                ?  
+                                    <Pressable style={styles.save} onPress={activityPoster}>
+                                        <Text style={[styles.saveText, {fontFamily:theme.font}]}>Save</Text>
+                                    </Pressable>
+                                : componentName !== undefined
+                                    ?
+                                        <Pressable style={styles.save} onPress={activityPoster}>
+                                            <Text style={[styles.saveText, {fontFamily:theme.font}]}>Save</Text>
+                                        </Pressable>
+                                    : ''
+                            }
+                            <Pressable style={[styles.cancel, {backgroundColor:dark ? '#fff' : 'unset'}]} onPress={cancelButton}>
+                                <Text style={[styles.cancelText, {fontFamily:theme.font}]}>cancel</Text>
+                            </Pressable>
+                        </>
+                    }
                 </View>
             </View>
         </Modal>
@@ -291,13 +393,12 @@ const ActivityRegistry = ({componentName, isActivityRegistryOpened, setIsActivit
 // Styles
 const styles = StyleSheet.create({
     topbar:{
-        height:70,
+        flex:1,
         width:'100%',
         display:'flex',
         flexDirection:'row',
         alignItems:'center',
-        borderBottomWidth:1,
-        borderBottomColor:'#ccc'
+        borderBottomWidth:2,
     },
     arrowBackIcon:{
         fontSize:30,
@@ -314,6 +415,7 @@ const styles = StyleSheet.create({
     container:{
         width:'100%',
         height:'100%',
+        display:'flex',
         position:'relative'
     },
     content:{
@@ -321,8 +423,8 @@ const styles = StyleSheet.create({
         maxWidth:500,
         paddingTop:10,
         display:'flex',
-        paddingBottom:100,
-        alignItems:'center'
+        alignItems:'center',
+        backgroundColor:'#f5f5f5'
     },
     labelFieldContainer:{
         display:'flex',
@@ -330,14 +432,13 @@ const styles = StyleSheet.create({
         flexDirection:'row',
     },
     input:{
-        flex:1,
+        flex:5,
         color:'#000',
         borderWidth:2,
-        borderRadius:5,
         paddingLeft:15,
         marginRight:10,
-        paddingVertical:10,
-        borderColor:'#ccc',
+        borderRadius:50,
+        paddingVertical:10
     },
     singleInput:{
         flex:1,
@@ -346,8 +447,7 @@ const styles = StyleSheet.create({
         borderRadius:5,
         paddingLeft:15,
         marginRight:10,
-        paddingVertical:10,
-        borderColor:'#ccc',
+        paddingVertical:10
     },
     fieldContainer:{
         width:'100%',
@@ -362,82 +462,88 @@ const styles = StyleSheet.create({
     },
     descItem:{
         width:'85%',
-        marginTop:40   
+        marginTop:25   
     },
     button:{
-        width:'47%',
+        width:'45%',
         display:'flex',
-        borderRadius:5,
+        borderRadius:20,
         alignItems:'center',
         justifyContent:'center',
-        backgroundColor:'#0d80e7'
+        backgroundColor:'#35C7FB',
     },
     unSelectedButton:{
-        width:'47%',
+        width:'45%',
         display:'flex',
-        borderRadius:5,
+        borderWidth:2,
+        borderRadius:20,
         alignItems:'center',
-        backgroundColor:'#ccc',
-        justifyContent:'center'
+        justifyContent:'center',
     },
     buttonText:{
+        fontSize:30,
         color:'#fff',
-        marginVertical:30
+        marginVertical:25,
     },
     unSelectedButtonText:{
-        color:'#000',
-        marginVertical:30
+        fontSize:30,
+        marginVertical:25
     },
     cameraContainer:{
         height:100,
         width:'100%',
-        borderWidth:1,
+        borderWidth:2,
         borderRadius:5,
         display:'flex',
-        borderColor:'#ccc',
         alignItems:'center',
         justifyContent:'center'
     },
     bottomNav:{
-        left:0,
-        height:70,
-        bottom:0,
         width:'100%',
         display:'flex',
-        borderTopWidth:1,
+        borderTopWidth:2,
+        borderColor:'#000',
+        paddingVertical:20,
         flexDirection:'row',
-        alignItems:'center',
-        position:'absolute',
-        borderTopColor:'#ccc',
-        backgroundColor:'#fff',
-        justifyContent:'space-between'
+        alignItems:'center'
     },
     save:{
-        width:'47%',
+        width:'40%',
+        marginLeft:20,
         display:'flex',
+        borderRadius:10,
         alignItems:'center',
-        justifyContent:'center'
+        justifyContent:'center',
+        backgroundColor:'#ED7D31'
     },
     cancel:{
-        width:'47%',
+        width:'40%',
         display:'flex',
         alignItems:'center',
+        borderRadius:10,
+        borderWidth:2,
+        marginRight:20,
+        borderColor:'#ED7D31',
         justifyContent:'center'
     },
     saveText:{
         fontSize:18,
-        color:'#0d80e7'
+        color:'#fff',
+        paddingVertical:10,
     },
     cancelText:{
-        fontSize:18
+        fontSize:18,
+        color:'#ED7D31',
+        paddingVertical:10
     },
     labelText:{
-        fontSize:18
+        fontSize:18,
+        fontWeight:'500'
     },
     labelContent:{
-        marginLeft:10,
-        color:'#5f6368',
-        fontSize:15
+        fontSize:14,
+        marginLeft:20,
+        color:'#5f6368'
     },
     dateSignatureContainer:{
         width:'100%',
@@ -450,19 +556,15 @@ const styles = StyleSheet.create({
         width:'48%'
     },
     scanButton:{
+        flex:1,
         display:'flex',
         borderRadius:5,
-        flexDirection:'row',
-        alignItems:'center',
-        justifyContent:'center',
+        borderWidth:2,
         paddingVertical:10,
+        alignItems:'center',
+        flexDirection:'row',
         paddingHorizontal:10,
-        backgroundColor:'#0d80e7'   
-    },
-    scanButtonText:{
-        fontSize:14,
-        color:'#fff',
-        marginRight:5
+        justifyContent:'center',
     },
     imageCloseButton:{
         top:10,
@@ -472,6 +574,47 @@ const styles = StyleSheet.create({
         paddingHorizontal:15,
         position:'absolute',
         backgroundColor:'#fff'
+    },
+    scanImage:{
+        width:35,
+        height:30
+    },
+    bookButton:{
+        flex:1,
+        padding:10,
+        marginLeft:10,
+        borderWidth:2,
+        display:'flex',
+        borderRadius:50,
+        alignItems:'center',
+        flexDirection:'row',
+        justifyContent:'center'
+    },
+    inputFieldContainer:{
+        width:'100%',
+        display:'flex',
+        alignItems:'center',
+        flexDirection:'row',
+        justifyContent:'space-between'   
+    },
+    labelItem:{
+        width:'80%',
+        marginTop:30,
+        paddingBottom:15,
+        borderBottomWidth:2
+    },
+    taskItem:{
+        width:'85%',
+        marginTop:30
+    },
+    remarkInput:{
+        flex:1,
+        color:'#000',
+        borderWidth:2,
+        borderRadius:5,
+        paddingLeft:15,
+        marginRight:10,
+        paddingVertical:30
     }
 });
 

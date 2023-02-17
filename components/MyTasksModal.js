@@ -2,14 +2,19 @@
 import axios from 'axios';
 import moment from 'moment';
 import LoadingIcon from './LoadingIcon';
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import ActivityRegistry from './ActivityRegistry';
+import {useTheme} from '../src/theme/themeProvider';
 import IonIcon from 'react-native-vector-icons/Ionicons';
-import {Modal, Pressable, ScrollView, View, Text, StyleSheet, TouchableOpacity, Switch} from 'react-native';
+import {Modal, Pressable, ScrollView, View, Text, StyleSheet, TouchableOpacity, Switch, Image, Animated} from 'react-native';
 
 
 // Main Function
 const MyTasksModal = ({isMyTasksOpened, setIsMyTasksOpened}) => {
+
+
+    // Theme
+    const {dark, theme} = useTheme();
 
 
     // Selcted sorting method
@@ -52,7 +57,7 @@ const MyTasksModal = ({isMyTasksOpened, setIsMyTasksOpened}) => {
 
 
             // Request
-            const res = await axios.get('https://janus-server-api.herokuapp.com/components/');
+            const res = await axios.get('https://janus-backend-api.herokuapp.com/components/');
             
 
             // Next sunday
@@ -92,16 +97,37 @@ const MyTasksModal = ({isMyTasksOpened, setIsMyTasksOpened}) => {
 
     // Save handler
     const [requests, setRequests] = useState([]);
+    const [fadingItems, setFadingItems] = useState([]);
+    const translateAnim = useRef(new Animated.Value(0)).current;
+    const translate = () => {
+        Animated.timing(translateAnim, {
+            toValue:-2000,
+            duration:1500,
+            useNativeDriver:true
+        }).start();
+        setTimeout(() => {
+            Animated.timing(translateAnim, {
+                toValue:0,
+                duration:1500,
+                useNativeDriver:true
+            }).start();
+        }, 2000);
+    };
     const saveHandler = async () => {
         try {
-            axios.all(
-                requests.map(request => {
-                    axios.put(request.updateLink, request.input);
-                    axios.delete(request.deleteLink);
-                })
-            );
-            setComponents(components.filter(component => checkedList.map(listItem => listItem.component_code !== component.component_code)));
-            setCheckedList([]);
+            setFadingItems(checkedList);
+            translate();
+            setTimeout(() => {
+                const res = axios.all(
+                    requests.map(request => {
+                        axios.put(request.updateLink, request.input);
+                        axios.delete(request.deleteLink);
+                    })
+                );
+                setComponents(components.filter(component => checkedList.map(listItem => listItem.component_code !== component.component_code)));
+                setCheckedList([]);
+                setFadingItems([]);
+            }, 0);
         } catch (err) {
             console.log(err);
         };
@@ -118,8 +144,8 @@ const MyTasksModal = ({isMyTasksOpened, setIsMyTasksOpened}) => {
             let attendanceNextDate = new Date();
             attendanceNextDate.setDate(today.getDate() + 30);
             const req = {
-                deleteLink:`https://janus-server-api.herokuapp.com/notifications/${id}`,
-                updateLink:`https://janus-server-api.herokuapp.com/components/component-code/${id}`,
+                deleteLink:`https://janus-backend-api.herokuapp.com/notifications/${id}`,
+                updateLink:`https://janus-backend-api.herokuapp.com/components/component-code/${id}`,
                 input:{
                     maintenance_lastest_date:today,
                     maintenance_next_date:nextDate,
@@ -131,101 +157,128 @@ const MyTasksModal = ({isMyTasksOpened, setIsMyTasksOpened}) => {
         }));
     }, [isActivityRegistryOpened, checkedList, sortMethod]);
 
+    console.log(typeof(checkedList[0]));
+
 
     return (
-        <Modal visible={isMyTasksOpened} animationType='slide'>
+        <Modal visible={isMyTasksOpened} animationType='slide' style={{backgroundColor:theme.screenBackground}}>
             <ActivityRegistry
                 isActivityRegistryOpened={isActivityRegistryOpened}
                 setIsActivityRegistryOpened={setIsActivityRegistryOpened}
                 componentName={componentName}
             />
-            <View style={styles.topbar}>
-                <Pressable onPress={() => setIsMyTasksOpened(false)}>
-                    <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
-                </Pressable>
-                <Text style={styles.header}>My Tasks</Text>
-            </View>
-            <View style={styles.upperBar}>
+            <View style={[styles.upperBar, {backgroundColor:theme.screenBackground, borderColor:theme.text}]}>
                 <View style={styles.checkBoxContainer}>
-                    <TouchableOpacity style={styles.checkbox} onPress={allCheckHandler}>{checkedList.includes('all') && <IonIcon name='checkmark' size={20}/>}</TouchableOpacity>
-                    {checkedList.length > 0 && <Text style={{marginLeft:5}}>{checkedList.length}</Text>}
+                    <TouchableOpacity style={[styles.checkbox, {borderColor:theme.text}]} onPress={allCheckHandler}>{checkedList.includes('all') && <IonIcon name='checkmark' size={20} color={theme.text}/>}</TouchableOpacity>
+                    {checkedList.length > 0 && <Text style={{marginLeft:5, color:theme.text, fontFamily:theme.font}}>{checkedList.length}</Text>}
                 </View>
                 <View style={styles.upperBarRightSection}>
                     <View style={styles.textsContainer}>
-                        <Text style={{textDecorationLine:sortMethod === 'week' ? 'underline' : 'none'}}>Week</Text>
+                        <Text style={{textDecorationLine:sortMethod === 'week' ? 'underline' : 'none', color:theme.text, fontFamily:theme.font}}>Week</Text>
                         <Switch
                             trackColor={{false:"#767577", true:"#767577"}}
                             thumbColor="#f4f3f4"
                             value={sortMethod === 'month' ? true : false}
                             onValueChange={() => sortMethodHandler(sortMethod === 'week' ? 'month' : 'week')}
                         />
-                        <Text style={{textDecorationLine:sortMethod === 'month' ? 'underline' : 'none'}}>Month</Text>
+                        <Text style={{textDecorationLine:sortMethod === 'month' ? 'underline' : 'none', color:theme.text, fontFamily:theme.font}}>Month</Text>
                     </View>
                 </View>
             </View>
             <ScrollView>
-                <View style={styles.mainItemsContainer}>
+                <View style={[styles.mainItemsContainer, {backgroundColor:theme.screenBackground}]}>
                     {components ? components[0].component_code ? components.map(component => 
-                        <View style={styles.item} key={component._id}>
-                            <TouchableOpacity style={styles.checkbox} onPress={() => itemCheckHandler(component.component_code)}>
-                                {checkedList.includes(component.component_code) && <IonIcon name='checkmark' size={20}/>}
+                        <Animated.View style={[styles.item, {
+                            backgroundColor:dark ? '#333F50' : '#F5F5F5',
+                            borderColor:dark ? '#35C7FB' : '#000',
+                            transform:[{translateX:fadingItems.includes(component.component_code) ? translateAnim : 0}]
+                        }]} key={component._id}>
+                            <TouchableOpacity style={[styles.checkbox, {borderColor:dark ? '#35C7FB' : '#000'}]} onPress={() => itemCheckHandler(component.component_code)}>
+                                {checkedList.includes(component.component_code) && <IonIcon name='checkmark' size={20} color={dark ? '#35C7FB' : '#000'}/>}
                             </TouchableOpacity>
                             <View style={styles.itemContent}>
                                 <View>
-                                    <Text>{component.building_code}</Text>
-                                    <Text>{component.component_code}</Text>
-                                    <Text>
+                                    <View style={{display:'flex', flexDirection:'row', alignItems:'center'}}>
                                         {
-                                            component?.maintenance_next_date !== undefined
-                                                ? component?.attendance_next_date !== undefined
-                                                    ?
-                                                        new Date(component?.maintenance_next_date) <= new Date(component?.attendance_next_date)
-                                                            ? 'Skötsel'
-                                                            : 'Tillsyn'
-                                                    : 'Skötsel'
-                                                : component?.attendance_next_date !== undefined
-                                                    ? 'Tillsyn'
-                                                    : ''
+                                            dark
+                                            ? <Image source={require('../assets/images/TaskDark.png')} style={{height:30, width:30}}/>
+                                            : <Image source={require('../assets/images/Task.png')} style={{height:30, width:30}}/>
                                         }
-                                    </Text>
-                                    <Text>{component.name}</Text>
-                                    <Text>
-                                        {component?.maintenance_next_date !== undefined
-                                        ? component?.attendance_next_date !== undefined
-                                            ?
-                                                new Date(component?.maintenance_next_date) <= new Date(component?.attendance_next_date)
-                                                    ? moment(component?.maintenance_next_date).format('YYYY-MM-DD')
-                                                    : moment(component?.attendance_next_date).format('YYYY-MM-DD')
-                                            : moment(component?.maintenance_next_date).format('YYYY-MM-DD')
-                                        : component?.attendance_next_date !== undefined
-                                            ? moment(component?.attendance_next_date).format('YYYY-MM-DD')
-                                            : ''
+                                        <Text style={{color:theme.text, fontFamily:theme.font}}>
+                                            {
+                                                component?.maintenance_next_date !== undefined
+                                                    ? component?.attendance_next_date !== undefined
+                                                        ?
+                                                            new Date(component?.maintenance_next_date) <= new Date(component?.attendance_next_date)
+                                                                ? 'Skötsel'
+                                                                : 'Tillsyn'
+                                                        : 'Skötsel'
+                                                    : component?.attendance_next_date !== undefined
+                                                        ? 'Tillsyn'
+                                                        : ''
+                                            }
+                                        </Text>
+                                    </View>
+                                    <View style={{display:'flex', flexDirection:'row', alignItems:'center'}}>
+                                        {
+                                            dark
+                                            ? <Image source={require('../assets/images/DateDark.png')} style={{height:30, width:30}}/>
+                                            : <Image source={require('../assets/images/Date.png')} style={{height:30, width:30}}/>
                                         }
-                                    </Text>
+                                        <Text style={{color:theme.text, fontFamily:theme.font}}>
+                                            {component?.maintenance_next_date !== undefined
+                                            ? component?.attendance_next_date !== undefined
+                                                ?
+                                                    new Date(component?.maintenance_next_date) <= new Date(component?.attendance_next_date)
+                                                        ? moment(component?.maintenance_next_date).format('YYYY-MM-DD')
+                                                        : moment(component?.attendance_next_date).format('YYYY-MM-DD')
+                                                : moment(component?.maintenance_next_date).format('YYYY-MM-DD')
+                                            : component?.attendance_next_date !== undefined
+                                                ? moment(component?.attendance_next_date).format('YYYY-MM-DD')
+                                                : ''
+                                            }
+                                        </Text>
+                                    </View>
+                                    <View style={{display:'flex', flexDirection:'row', alignItems:'center'}}>
+                                        {
+                                            dark
+                                            ? <Image source={require('../assets/images/HomeDark.png')} style={{height:30, width:30}}/>
+                                            : <Image source={require('../assets/images/Home.png')} style={{height:30, width:30}}/>
+                                        }
+                                        <Text style={{color:theme.text, fontFamily:theme.font}}>{component.building_code} {component.name}</Text>
+                                    </View>
                                 </View>
-                                <Pressable style={styles.detailsButton} onPress={() => activityRegistryOpener(component.component_code)}>
-                                    <Text style={styles.buttonText}>Details</Text>
-                                    <IonIcon name='arrow-forward' style={styles.detailsIcon} />
+                                <Pressable style={[styles.iconContainer, {
+                                        backgroundColor:dark ? '#000' : '#D9D9D9',
+                                        borderColor:dark ? '#35C7FB' : '#000'
+                                    }]} onPress={() => activityRegistryOpener(component.component_code)}>
+                                        {
+                                            dark
+                                            ? <Image source={require('../assets/images/ArrowForwardDark.png')} style={{width:25, height:25}}/>
+                                            : <Image source={require('../assets/images/ArrowForward.png')} style={{width:25, height:25}}/>
+                                        }
                                 </Pressable>
                             </View>
-                        </View>
+                        </Animated.View>
                     ) : <View style={styles.loadingIconContainer}>
                             <LoadingIcon />
                         </View>
                         : <View style={styles.loadingIconContainer}>
-                            <Text>No Tasks To Show</Text>
+                            <Text style={{fontFamily:theme.font}}>No Tasks To Show</Text>
                         </View>
                     }
                 </View>
             </ScrollView>
-            <View style={styles.bottomNav}>
-                    <Pressable style={styles.cancel} onPress={cancelHandler}>
-                        <Text style={styles.cancelText}>cancel</Text>
+            <View style={[styles.bottomNav, {backgroundColor:theme.screenBackground, justifyContent:checkedList.length > 0 ? 'space-between' : 'center'}]}>
+                    {checkedList.length > 0 &&
+                        <Pressable style={styles.save} onPress={saveHandler}>
+                            <Text style={[styles.saveText, {fontFamily:theme.font}]}>Save</Text>
+                        </Pressable>
+                    }
+                    <Pressable style={[styles.cancel, {backgroundColor:dark ? '#fff' : 'unset'}]} onPress={cancelHandler}>
+                        <Text style={[styles.cancelText, {fontFamily:theme.font}]}>cancel</Text>
                     </Pressable>
-                    <Pressable style={styles.save} onPress={saveHandler}>
-                        <Text style={styles.saveText}>Save</Text>
-                    </Pressable>
-                </View>
+            </View>
         </Modal>
     )
 };
@@ -233,24 +286,15 @@ const MyTasksModal = ({isMyTasksOpened, setIsMyTasksOpened}) => {
 
 // Styles
 const styles = StyleSheet.create({
-    topbar:{
-        width:'100%',
-        height:70,
-        display:'flex',
-        flexDirection:'row',
-        alignItems:'center',
-        borderBottomWidth:1,
-        borderBottomColor:'#ccc'
-    },
     upperBar:{
         width:'100%',
         display:'flex',
-        paddingVertical:10,
+        paddingVertical:5,
         flexDirection:'row',
         alignItems:'center',
         borderBottomWidth:2,
-        paddingHorizontal:30,
-        borderBottomColor:'#000',
+        borderTopWidth:2,
+        paddingHorizontal:20,
         justifyContent:'space-between'
     },
     upperBarRightSection:{
@@ -267,26 +311,18 @@ const styles = StyleSheet.create({
     sortImg:{
         width:30
     },
-    arrowBackIcon:{
-        fontSize:30,
-        marginLeft:15
-    },
     checkbox:{
         width:30,
         height:30,
-        borderWidth:1,
+        borderWidth:2,
         borderRadius:5,
         display:'flex',
-        borderColor:'#000',
         alignItems:'center',
-        backgroundColor:'#ccc',
         justifyContent:'center',
-    },
-    header:{
-        fontSize:20,
-        marginLeft:10
+        backgroundColor:'transparent'
     },
     mainItemsContainer:{
+        paddingTop:20,
         marginBottom:70
     },
     itemContainer:{
@@ -301,14 +337,15 @@ const styles = StyleSheet.create({
     },
     item:{
         width:'100%',
-        borderWidth:1,
-        display:'flex',
-        borderColor:'#000',
+        borderRadius:5,
+        marginVertical:3,
+        borderTopWidth:2,
         paddingVertical:10,
+        borderBottomWidth:2,
         alignItems:'center',
         flexDirection:'row',
         paddingHorizontal:30,
-        backgroundColor:'#eee',
+        justifyContent:'center'
     },
     itemContent:{
         width:'100%',
@@ -345,42 +382,57 @@ const styles = StyleSheet.create({
     },
     bottomNav:{
         left:0,
-        height:70,
         bottom:0,
+        height:130,
         width:'100%',
         display:'flex',
-        borderTopWidth:1,
         flexDirection:'row',
         alignItems:'center',
-        position:'absolute',
-        borderTopColor:'#000',
-        backgroundColor:'#fff',
-        justifyContent:'space-between'
+        position:'absolute'
     },
     save:{
-        width:'47%',
+        width:'40%',
+        marginLeft:20,
         display:'flex',
+        borderRadius:10,
         alignItems:'center',
-        justifyContent:'center'
+        justifyContent:'center',
+        backgroundColor:'#ED7D31'
     },
     cancel:{
-        width:'47%',
+        width:'40%',
         display:'flex',
         alignItems:'center',
+        borderRadius:10,
+        borderWidth:2,
+        marginRight:20,
+        borderColor:'#ED7D31',
         justifyContent:'center'
     },
     saveText:{
         fontSize:18,
-        color:'#0d80e7'
+        color:'#fff',
+        paddingVertical:10,
     },
     cancelText:{
-        fontSize:18
+        fontSize:18,
+        color:'#ED7D31',
+        paddingVertical:10
     },
     loadingIconContainer:{
         width:'100%',
         marginTop:50,
         display:'flex',
         alignItems:'center'
+    },
+    iconContainer:{
+        width:40,
+        height:40,
+        borderWidth:1,
+        display:'flex',
+        borderRadius:50,
+        alignItems:'center',
+        justifyContent:'center',
     }
 });
 

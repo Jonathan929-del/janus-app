@@ -3,11 +3,16 @@ import axios from 'axios';
 import Buildings from './Buildings';
 import {useState, useEffect} from 'react';
 import MapView, {Marker} from 'react-native-maps';
-import {View, StyleSheet, Pressable, Text} from 'react-native';
+import {useTheme} from '../src/theme/themeProvider';
+import {View, StyleSheet, Pressable, Text, Image} from 'react-native';
 
 
 // Main Function
 const Map = () => {
+
+
+  // Theme
+  const {dark, theme} = useTheme();
   
   
   // Fetching properties
@@ -16,8 +21,15 @@ const Map = () => {
   useEffect(() => {
     const propertiesFetcher = async () => {
       try {
-        const res = await axios.get('https://janus-server-api.herokuapp.com/properties');
-        setProperties(res.data.filter(property => property?.latitude !== undefined));
+        const res = await axios.get('https://janus-backend-api.herokuapp.com/properties');
+        const undefinedFilter = res.data.filter(property => {
+          return property.latitude !== undefined;
+        });
+        const stringFilter = undefinedFilter.filter(property => {
+          const latitude = property.latitude;
+          return !isNaN(latitude);
+        });
+        setProperties(stringFilter);
       } catch (err) {
         console.log(err);
       }
@@ -29,7 +41,7 @@ const Map = () => {
   // Property fetching
   const propertyFetcher = async latitude => {
     try {
-      const res = await axios.get(`https://janus-server-api.herokuapp.com/properties/${latitude}`);
+      const res = await axios.get(`https://janus-backend-api.herokuapp.com/properties/${latitude}`);
       setSelectedProperty(res.data);
     } catch (err) {
       console.log(err);
@@ -43,7 +55,7 @@ const Map = () => {
   const buildingsOpener = text => {
     setPropertyCode(text);
     setIsBuildingsOpened(true);
-  }
+  };
 
 
   return (
@@ -65,19 +77,42 @@ const Map = () => {
             <Marker 
               key={Math.floor(Math.random() * 1000000)}
               coordinate={{
-                latitude:property?.latitude ? JSON.parse(property?.latitude) : 0,
-                longitude:property?.latitude ? JSON.parse(property?.longitude) : 0
+                latitude:JSON.parse(property?.latitude),
+                longitude:JSON.parse(property?.longitude)
               }}
               onPress={() => propertyFetcher(property.latitude)}
             />
           ))}
       </MapView>
-      <Pressable style={styles.itemContainer} onPress={() => buildingsOpener(selectedProperty.property_code)}>
-          <View style={styles.leftSection}>
-              <Text style={styles.number}>{selectedProperty?.property_code}</Text>
-              <Text style={styles.destination}>{selectedProperty?.name}</Text>
-          </View>
-      </Pressable>
+        <Pressable style={[styles.itemContainer, {
+              backgroundColor:dark ? '#333F50' : '#F5F5F5',
+              borderColor:dark ? '#35C7FB' : '#000'
+            }]}
+            onPress={() => buildingsOpener(selectedProperty.property_code)}
+        >
+            <View style={styles.leftSection}>
+                {dark
+                    ? <Image source={require('../assets/images/PropertyIconDark.png')} style={styles.propertyIcon}/>
+                    : <Image source={require('../assets/images/PropertyIcon.png')} style={styles.propertyIcon}/>
+                }
+                <Text style={{color:theme.text, fontFamily:theme.font}}>{selectedProperty?.property_code}</Text>
+            </View>
+            <View style={styles.middleSection}>
+                <Text style={[styles.destination, {color:theme.text, fontFamily:theme.font}]}>{selectedProperty.name}</Text>
+            </View>
+            <View style={styles.rightSection}>
+                <View style={[styles.iconContainer, {
+                    backgroundColor:dark ? '#000' : '#d9d9d9',
+                    borderColor:dark ? '#35C7FB' : '#000'
+                }]}>
+                    {
+                      dark
+                      ? <Image source={require('../assets/images/ArrowForwardDark.png')} style={{height:25, width:25}}/>
+                      : <Image source={require('../assets/images/ArrowForward.png')} style={{height:25, width:25}}/>
+                    }
+                </View>
+            </View>
+        </Pressable>
     </View>
   )
 }
@@ -97,40 +132,61 @@ const styles = StyleSheet.create({
     height:'100%',
   },
   itemContainer:{
-    bottom:5,
+    bottom:10,
     height:100,
+    marginTop:1,
     width:'100%',
     display:'flex',
-    borderColor:'#ccc',
+    borderRadius:10,
+    borderTopWidth:2,
     alignItems:'center',
     flexDirection:'row',
-    borderBottomWidth:1,
+    borderBottomWidth:2,
     position:'absolute',
-    backgroundColor:'#fff',
-    justifyContent:'space-between'
+    justifyContent:'space-between',
   },
   leftSection:{
-    flex:6,
+    flex:3,
     height:'100%',
     display:'flex',
     paddingLeft:30,
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'flex-start',
+  },
+  middleSection:{
+    flex:6,
+    display:'flex',
+    flexDirection:'row',
     alignItems:'flex-start',
-    justifyContent:'center'
+    justifyContent:'flex-start'
   },
   rightSection:{
-    flex:1,
-    height:'100%',
-    display:'flex',
-    paddingRight:30,
-    alignItems:'center',
-    justifyContent:'center'
-  },
-  number:{
-      marginBottom:10
+      flex:1,
+      height:'100%',
+      display:'flex',
+      paddingRight:30,
+      alignItems:'center',
+      justifyContent:'center'
   },
   destination:{
-      color:'#5f6368',
       fontWeight:'500'
+  },
+  loadingIconContainer:{
+      marginTop:50
+  },
+  propertyIcon:{
+      height:40,
+      width:40     
+  },
+  iconContainer:{
+      width:40,
+      height:40,
+      borderWidth:1,
+      display:'flex',
+      borderRadius:50,
+      alignItems:'center',
+      justifyContent:'center',
   }
 })
 

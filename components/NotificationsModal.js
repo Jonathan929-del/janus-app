@@ -2,23 +2,28 @@
 import axios from 'axios';
 import moment from 'moment';
 import LoadingIcon from './LoadingIcon';
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import ActivityRegistry from './ActivityRegistry';
+import {useTheme} from '../src/theme/themeProvider';
 import IonIcon from 'react-native-vector-icons/Ionicons';
-import {Modal, Pressable, ScrollView, View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {Modal, Pressable, ScrollView, View, Text, StyleSheet, Image, TouchableOpacity, Animated} from 'react-native';
 
 
 // Main Function
 const NotificationsModal = ({isNotificationsOpened, setIsNotificationsOpened}) => {
-
-
+    
+    
+    const {dark, theme} = useTheme();
+    
+    
     // Selcted sorting method
     const [sortMethod, setSortMethod] = useState('building');
     const [sortDirection, setSortDirection] = useState('des');
-
-
+    
+    
     // Checking checkbox
     const [checkedList, setCheckedList] = useState([]);
+    const [fadingItems, setFadingItems] = useState([]);
     const allCheckHandler = () => {
         if(checkedList.includes('all')){
             setCheckedList([]);
@@ -40,7 +45,7 @@ const NotificationsModal = ({isNotificationsOpened, setIsNotificationsOpened}) =
     const [notifications, setNotifications] = useState();
     const notificationsFetcher = async () => {
         try {
-            const res = await axios.get('https://janus-server-api.herokuapp.com/notifications/');
+            const res = await axios.get('https://janus-backend-api.herokuapp.com/notifications/');
             const presentNotifications = res.data.filter(notification => notification[0]?.building_code !== undefined);
             if(sortMethod === 'building' && sortDirection === 'des'){
                 setNotifications(presentNotifications.sort((a, b) =>{
@@ -70,7 +75,7 @@ const NotificationsModal = ({isNotificationsOpened, setIsNotificationsOpened}) =
         setIsNotificationsOpened(false);
     };
 
-
+    
     // Opening activity registry
     const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
     const [componentName, setComponentName] = useState('');
@@ -78,20 +83,40 @@ const NotificationsModal = ({isNotificationsOpened, setIsNotificationsOpened}) =
         setComponentName(code);
         setIsActivityRegistryOpened(true);
     };
-
-
+    
+    
     // Save handler
     const [requests, setRequests] = useState([]);
+    const translateAnim = useRef(new Animated.Value(0)).current;
+    const translate = () => {
+        Animated.timing(translateAnim, {
+            toValue:-2000,
+            duration:1500,
+            useNativeDriver:true
+        }).start();
+        setTimeout(() => {
+            Animated.timing(translateAnim, {
+                toValue:0,
+                duration:1500,
+                useNativeDriver:true
+            }).start();
+        }, 2000);
+    };
     const saveHandler = async () => {
         try {
-            axios.all(
-                requests.map(request => {
-                    axios.put(request.updateLink, request.input);
-                    axios.delete(request.deleteLink);
-                })
-            );
-            setNotifications(notifications.filter(notification => checkedList.map(listItem => listItem.component_code !== notification.component_code)));
-            setCheckedList([]);
+            setFadingItems(checkedList);
+            translate();
+            setTimeout(() => {
+                setNotifications(notifications.filter(notification => checkedList.map(listItem => listItem.component_code !== notification.component_code)));
+                axios.all(
+                    requests.map(request => {
+                        axios.put(request.updateLink, request.input);
+                        axios.delete(request.deleteLink);
+                    })
+                );
+                setCheckedList([]);
+                setFadingItems([]);
+            }, 0);
         } catch (err) {
             console.log(err);
         };
@@ -106,8 +131,8 @@ const NotificationsModal = ({isNotificationsOpened, setIsNotificationsOpened}) =
             let nextDate =  new Date();
             nextDate.setDate(today.getDate() + 183);
             const req = {
-                deleteLink:`https://janus-server-api.herokuapp.com/notifications/${id}`,
-                updateLink:`https://janus-server-api.herokuapp.com/components/component-code/${id}`,
+                deleteLink:`https://janus-backend-api.herokuapp.com/notifications/${id}`,
+                updateLink:`https://janus-backend-api.herokuapp.com/components/component-code/${id}`,
                 input:{
                     maintenance_lastest_date:today,
                     maintenance_next_date:nextDate
@@ -115,111 +140,140 @@ const NotificationsModal = ({isNotificationsOpened, setIsNotificationsOpened}) =
             };
             return (req);
         }));
-    }, [isActivityRegistryOpened, checkedList, sortDirection, sortMethod]);
+    }, [isActivityRegistryOpened, sortDirection, sortMethod, checkedList]);
 
 
     return (
-        <Modal visible={isNotificationsOpened} animationType='slide'>
+        <Modal visible={isNotificationsOpened} animationType='slide' style={{backgroundColor:theme.screenBackground}}>
             <ActivityRegistry
                 isActivityRegistryOpened={isActivityRegistryOpened}
                 setIsActivityRegistryOpened={setIsActivityRegistryOpened}
                 componentName={componentName}
             />
-            <View style={styles.topbar}>
-                <Pressable onPress={() => setIsNotificationsOpened(false)}>
-                    <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
-                </Pressable>
-                <Text style={styles.header}>Notifications</Text>
-            </View>
-            <View style={styles.upperBar}>
+            <View style={[styles.upperBar, {backgroundColor:theme.screenBackground, borderColor:theme.text}]}>
                 <View style={styles.checkBoxContainer}>
-                    <TouchableOpacity style={styles.checkbox} onPress={allCheckHandler}>{checkedList.includes('all') && <IonIcon name='checkmark' size={20}/>}</TouchableOpacity>
-                    {checkedList.length > 0 && <Text style={{marginLeft:5}}>{checkedList.length}</Text>}
+                    <TouchableOpacity style={[styles.checkbox, {borderColor:theme.text}]} onPress={allCheckHandler}>{checkedList.includes('all') && <IonIcon name='checkmark' size={20} color={theme.text}/>}</TouchableOpacity>
+                    {checkedList.length > 0 && <Text style={{marginLeft:5, color:theme.text, fontFamily:theme.font}}>{checkedList.length}</Text>}
                 </View>
                 <View style={styles.upperBarRightSection}>
                     <View style={styles.textsContainer}>
                         <Pressable onPress={() => setSortMethod('building')}>
-                            <Text style={{textDecorationLine:sortMethod === 'building' ? 'underline' : 'none'}}>Building</Text>
+                            <Text style={{textDecorationLine:sortMethod === 'building' ? 'underline' : 'none', color:theme.text, fontFamily:theme.font}}>Building</Text>
                         </Pressable>
-                        <Text>/</Text>
+                        <Text style={{color:theme.text}}>/</Text>
                         <Pressable onPress={() => setSortMethod('date')}>
-                            <Text style={{textDecorationLine:sortMethod === 'date' ? 'underline' : 'none'}}>Date</Text>
+                            <Text style={{textDecorationLine:sortMethod === 'date' ? 'underline' : 'none', color:theme.text, fontFamily:theme.font}}>Date</Text>
                         </Pressable>
                     </View>
-                    {sortDirection === 'asc' ?
-                            <TouchableOpacity onPress={() => setSortDirection('des')}>
-                                <Image source={require('../assets/images/AscendingSort.png')} style={styles.sortImg}/>
-                            </TouchableOpacity>
-                        :
-                            <TouchableOpacity onPress={() => setSortDirection('asc')}>
-                                <Image source={require('../assets/images/Sort.png')} style={styles.sortImg}/>
-                            </TouchableOpacity>
-                    }
+                    <TouchableOpacity onPress={() => setSortDirection('asc')}>
+                        {
+                            dark
+                            ? <Image source={require('../assets/images/SortDark.png')} style={styles.sortImg}/>
+                            : <Image source={require('../assets/images/Sort.png')} style={styles.sortImg}/>
+                        }
+                    </TouchableOpacity>
                 </View>
             </View>
             <ScrollView>
-                <View style={styles.mainItemsContainer}>
+                <View style={[styles.mainItemsContainer, {backgroundColor:theme.screenBackground}]}>
                     {notifications && notifications[0] ? notifications[0][0].component_code ? notifications.map(notification => 
-                        <View style={styles.item} key={notification[0]._id}>
-                            <TouchableOpacity style={styles.checkbox} onPress={() => itemCheckHandler(notification[0].component_code)}>
-                                {checkedList.includes(notification[0].component_code) && <IonIcon name='checkmark' size={20}/>}
+                        <Animated.View
+                            style={[styles.item, {
+                                backgroundColor:dark ? '#333F50' : '#F5F5F5',
+                                borderColor:dark ? '#35C7FB' : '#000',
+                                transform:[{translateX:fadingItems.includes(notification[0].component_code) ? translateAnim : 0}]
+                            }]}
+                            key={notification[0]._id}
+                        >
+                            <TouchableOpacity style={[styles.checkbox, {borderColor:dark ? '#35C7FB' : '#000'}]} onPress={() => itemCheckHandler(notification[0].component_code)}>
+                                {checkedList.includes(notification[0].component_code) && <IonIcon name='checkmark' size={20} color={dark ? '#35C7FB' : '#000'}/>}
                             </TouchableOpacity>
                             <View style={styles.itemContent}>
                                 <View>
-                                    <Text>{notification[0].building_code}</Text>
-                                    <Text>{notification[0].component_code}</Text>
-                                    <Text>
+                                    <View style={{display:'flex', flexDirection:'row', alignItems:'center', marginVertical:5}}>
                                         {
-                                            notification[0]?.maintenance_next_date !== undefined
+                                            dark
+                                            ? <Image source={require('../assets/images/TaskDark.png')} style={{width:30, height:30}}/>
+                                            : <Image source={require('../assets/images/Task.png')} style={{width:30, height:30}}/>
+                                        }
+                                        <Text style={{color:theme.text, fontFamily:theme.font}}>
+                                            {
+                                                notification[0]?.maintenance_next_date !== undefined
+                                                    ? notification[0]?.attendance_next_date !== undefined
+                                                        ?
+                                                            new Date(notification[0]?.maintenance_next_date) <= new Date(notification[0]?.attendance_next_date)
+                                                                ? 'Skötsel'
+                                                                : 'Tillsyn'
+                                                        : 'Skötsel'
+                                                    : notification[0]?.attendance_next_date !== undefined
+                                                        ? 'Tillsyn'
+                                                        : ''
+                                            }
+                                        </Text>
+                                    </View>
+                                    <View style={{display:'flex', alignItems:'center', flexDirection:'row'}}>
+                                        {
+                                            dark
+                                            ? <Image source={require('../assets/images/DateDark.png')} style={{width:30, height:30}}/>
+                                            : <Image source={require('../assets/images/Date.png')} style={{width:30, height:30}}/>
+                                        }
+                                        <Text style={{color:theme.text, fontFamily:theme.font}}>
+                                            {notification[0]?.maintenance_next_date !== undefined
                                                 ? notification[0]?.attendance_next_date !== undefined
                                                     ?
                                                         new Date(notification[0]?.maintenance_next_date) <= new Date(notification[0]?.attendance_next_date)
-                                                            ? 'Skötsel'
-                                                            : 'Tillsyn'
-                                                    : 'Skötsel'
+                                                            ? moment(notification[0]?.maintenance_next_date).format('YYYY-MM-DD')
+                                                            : moment(notification[0]?.attendance_next_date).format('YYYY-MM-DD')
+                                                    : moment(notification[0]?.maintenance_next_date).format('YYYY-MM-DD')
                                                 : notification[0]?.attendance_next_date !== undefined
-                                                    ? 'Tillsyn'
+                                                    ? moment(notification[0]?.attendance_next_date).format('YYYY-MM-DD')
                                                     : ''
+                                            }
+                                        </Text>
+                                    </View>
+                                    <View style={{display:'flex', alignItems:'center', flexDirection:'row', marginVertical:5}}>
+                                        {
+                                            dark
+                                            ? <Image source={require('../assets/images/HomeDark.png')} style={{width:30, height:30}}/>
+                                            : <Image source={require('../assets/images/Home.png')} style={{width:30, height:30}}/>
                                         }
-                                    </Text>
-                                    <Text>{notification[0].name}</Text>
-                                    <Text>
-                                        {notification[0]?.maintenance_next_date !== undefined
-                                            ? notification[0]?.attendance_next_date !== undefined
-                                                ?
-                                                    new Date(notification[0]?.maintenance_next_date) <= new Date(notification[0]?.attendance_next_date)
-                                                        ? moment(notification[0]?.maintenance_next_date).format('YYYY-MM-DD')
-                                                        : moment(notification[0]?.attendance_next_date).format('YYYY-MM-DD')
-                                                : moment(notification[0]?.maintenance_next_date).format('YYYY-MM-DD')
-                                            : notification[0]?.attendance_next_date !== undefined
-                                                ? moment(notification[0]?.attendance_next_date).format('YYYY-MM-DD')
-                                                : ''
-                                        }
-                                    </Text>
+                                        <Text style={{color:theme.text, fontFamily:theme.font}}>{notification[0].building_code} {notification[0].name}</Text>
+                                    </View>
                                 </View>
-                                <Pressable style={styles.detailsButton} onPress={() => activityRegistryOpener(notification[0].component_code)}>
-                                    <Text style={styles.buttonText}>Details</Text>
-                                    <IonIcon name='arrow-forward' style={styles.detailsIcon}/>
+                                <Pressable style={[styles.iconContainer, {
+                                        backgroundColor:dark ? '#000' : '#D9D9D9',
+                                        borderColor:dark ? '#35C7FB' : '#000'
+                                    }]}
+                                    onPress={() => activityRegistryOpener(notification[0].component_code)}
+                                >
+                                    {
+                                        dark
+                                        ? <Image source={require('../assets/images/ArrowForwardDark.png')} style={{height:25, width:25}}/>
+                                        : <Image source={require('../assets/images/ArrowForward.png')} style={{height:25, width:25}}/>
+                                    }
                                 </Pressable>
                             </View>
-                        </View>
+                        </Animated.View>
                     ) : <View style={styles.loadingIconContainer}>
                             <LoadingIcon />
                         </View>
                         : <View style={styles.loadingIconContainer}>
-                            <Text>No Tasks To Show</Text>
+                            <Text style={{fontFamily:theme.font, color:theme.color}}>No Tasks To Show</Text>
                         </View>
                     }
                 </View>
             </ScrollView>
-            <View style={styles.bottomNav}>
-                    <Pressable style={styles.cancel} onPress={cancelHandler}>
-                        <Text style={styles.cancelText}>cancel</Text>
-                    </Pressable>
+            <View style={[styles.bottomNav, {backgroundColor:theme.screenBackground, justifyContent:checkedList.length > 0 ? 'space-between' : 'center'}]}>
+                {
+                    checkedList.length > 0 &&
                     <Pressable style={styles.save} onPress={saveHandler}>
-                        <Text style={styles.saveText}>Save</Text>
+                        <Text style={[styles.saveText, {fontFamily:theme.font}]}>Save</Text>
                     </Pressable>
-                </View>
+                }
+                <Pressable style={[styles.cancel, {backgroundColor:dark ? '#fff' : 'unset'}]} onPress={cancelHandler}>
+                    <Text style={[styles.cancelText, {fontFamily:theme.font}]}>cancel</Text>
+                </Pressable>
+            </View>
         </Modal>
     )
 };
@@ -227,24 +281,15 @@ const NotificationsModal = ({isNotificationsOpened, setIsNotificationsOpened}) =
 
 // Styles
 const styles = StyleSheet.create({
-    topbar:{
-        width:'100%',
-        height:70,
-        display:'flex',
-        flexDirection:'row',
-        alignItems:'center',
-        borderBottomWidth:1,
-        borderBottomColor:'#ccc'
-    },
     upperBar:{
         width:'100%',
         display:'flex',
-        paddingVertical:10,
+        paddingVertical:5,
         flexDirection:'row',
         alignItems:'center',
         borderBottomWidth:2,
+        borderTopWidth:2,
         paddingHorizontal:30,
-        borderBottomColor:'#000',
         justifyContent:'space-between'
     },
     upperBarRightSection:{
@@ -259,29 +304,23 @@ const styles = StyleSheet.create({
         flexDirection:'row',
     },
     sortImg:{
-        width:30
-    },
-    arrowBackIcon:{
-        fontSize:30,
-        marginLeft:15
+        width:50,
+        height:50
     },
     checkbox:{
         width:30,
         height:30,
-        borderWidth:1,
+        borderWidth:2,
         borderRadius:5,
         display:'flex',
-        borderColor:'#000',
         alignItems:'center',
-        backgroundColor:'#ccc',
         justifyContent:'center',
-    },
-    header:{
-        fontSize:20,
-        marginLeft:10
+        backgroundColor:'transparent'
     },
     mainItemsContainer:{
-        marginBottom:70
+        paddingTop:20,
+        marginBottom:70,
+        paddingBottom:70
     },
     itemContainer:{
         height:100,
@@ -295,14 +334,16 @@ const styles = StyleSheet.create({
     },
     item:{
         width:'100%',
-        borderWidth:1,
+        borderTopWidth:2,
+        borderBottomWidth:2,
         display:'flex',
-        borderColor:'#000',
-        paddingVertical:10,
+        borderRadius:5,
+        marginVertical:3,
+        paddingLeft:46,
         alignItems:'center',
         flexDirection:'row',
         paddingHorizontal:30,
-        backgroundColor:'#eee',
+        justifyContent:'center'
     },
     itemContent:{
         width:'100%',
@@ -339,42 +380,57 @@ const styles = StyleSheet.create({
     },
     bottomNav:{
         left:0,
-        height:70,
         bottom:0,
+        height:130,
         width:'100%',
         display:'flex',
-        borderTopWidth:1,
         flexDirection:'row',
         alignItems:'center',
         position:'absolute',
-        borderTopColor:'#000',
-        backgroundColor:'#fff',
-        justifyContent:'space-between'
     },
     save:{
-        width:'47%',
+        width:'40%',
+        marginLeft:20,
         display:'flex',
+        borderRadius:10,
         alignItems:'center',
-        justifyContent:'center'
+        justifyContent:'center',
+        backgroundColor:'#ED7D31'
     },
     cancel:{
-        width:'47%',
+        width:'40%',
         display:'flex',
         alignItems:'center',
+        borderRadius:10,
+        borderWidth:2,
+        marginRight:20,
+        borderColor:'#ED7D31',
         justifyContent:'center'
     },
     saveText:{
         fontSize:18,
-        color:'#0d80e7'
+        color:'#fff',
+        paddingVertical:10,
     },
     cancelText:{
-        fontSize:18
+        fontSize:18,
+        color:'#ED7D31',
+        paddingVertical:10
     },
     loadingIconContainer:{
         width:'100%',
         marginTop:50,
         display:'flex',
         alignItems:'center'
+    },
+    iconContainer:{
+        width:40,
+        height:40,
+        borderWidth:1,
+        display:'flex',
+        borderRadius:50,
+        alignItems:'center',
+        justifyContent:'center',
     }
 });
 

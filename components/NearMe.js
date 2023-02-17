@@ -4,6 +4,7 @@ import moment from 'moment';
 import * as Location from 'expo-location';
 import {useEffect, useState} from 'react';
 import ActivityRegistry from './ActivityRegistry';
+import {useTheme} from '../src/theme/themeProvider';
 import IonIcon from 'react-native-vector-icons/Ionicons';
 import MapView, {Circle, Marker} from 'react-native-maps';
 import {Modal, Pressable, View, Text, StyleSheet, Image, Animated} from 'react-native';
@@ -11,6 +12,10 @@ import {Modal, Pressable, View, Text, StyleSheet, Image, Animated} from 'react-n
 
 // Main Function
 const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
+
+
+    // Theme
+    const {dark, theme} = useTheme();
     
     
     // Getting user's location
@@ -19,17 +24,14 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
 
     // Missed activities
     const [missedActivities, setMissedActivities] = useState([{}]);
-    const [missedActivitiesRequests, setMissedActivitiesRequests] = useState([]);
 
 
     // Upcoming activities
     const [upcomingActivities, setUpcomingActivities] = useState([{}]);
-    const [upcomingActivitiesRequests, setUpcomingActivitiesRequests] = useState([]);
 
 
     // All building filter
     const [allBuildings, setAllBuildings] = useState([{}]);
-    const [allBuildingsRequests, setAllBuildingsRequests] = useState([]);
 
 
     // Opening activity registry
@@ -66,7 +68,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
     const [selectedBuildingComponent, setSelectedBuildingComponent] = useState({});
     const selectedBuildingHandler = async buildingCode => {
         try {
-            const res = await axios.get(`https://janus-server-api.herokuapp.com/components/${buildingCode}`);
+            const res = await axios.get(`https://janus-backend-api.herokuapp.com/components/${buildingCode}`);
             const componentsWithDates = res.data.filter(component => component.maintenance_next_date !== undefined || component.attendance_next_date !== undefined);
             setSetOfComponents(componentsWithDates);
             setSelectedBuildingComponent(componentsWithDates[0]);
@@ -74,11 +76,19 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             console.log(err);
         }  
     };
-    const swipeHandler = () => {
+    const rightswipeHandler = () => {
         fadeInAndOut();
         setTimeout(() => {
             const componentsIds = setOfComponents.map(component => component.component_code);
             setIndex(index < componentsIds.length - 1 ? index + 1 : 0);
+            setSelectedBuildingComponent(setOfComponents[index]);
+        }, 200);
+    };
+    const leftswipeHandler = () => {
+        fadeInAndOut();
+        setTimeout(() => {
+            const componentsIds = setOfComponents.map(component => component.component_code);
+            setIndex(index !== 0 ? index - 1 : componentsIds.length - 1);
             setSelectedBuildingComponent(setOfComponents[index]);
         }, 200);
     };
@@ -90,14 +100,14 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
 
 
             // Notificaionts fetching
-            const res = await axios.get('https://janus-server-api.herokuapp.com/notifications/');
+            const res = await axios.get('https://janus-backend-api.herokuapp.com/notifications/');
             const presentNotifications = res.data !== undefined ? res.data.filter(notification => notification[0]?.building_code !== undefined) : '';
             const notificationsIds = presentNotifications?.map(notification => notification[0].building_code);
             const filteredNotificationsIds = notificationsIds?.filter((item,index) => notificationsIds.indexOf(item) === index);
 
 
             // Buildings fetching
-            const buildingsrRes = await axios.get('https://janus-server-api.herokuapp.com/buildings/');
+            const buildingsrRes = await axios.get('https://janus-backend-api.herokuapp.com/buildings/');
             const buildingsWithCoordinates = buildingsrRes.data.filter(building => building?.latitude !== undefined);
 
 
@@ -107,7 +117,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             });
             axios.all(
                 notificationsComponentsBuildings.map(building => {
-                    return axios.get(`https://janus-server-api.herokuapp.com/components/${building.building_code}`);
+                    return axios.get(`https://janus-backend-api.herokuapp.com/components/${building.building_code}`);
                 })
             )
             .then(axios.spread((...responses) => {
@@ -138,7 +148,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                 
 
             // Upcoming activities
-            const upcomingRes = await axios.get('https://janus-server-api.herokuapp.com/components/');
+            const upcomingRes = await axios.get('https://janus-backend-api.herokuapp.com/components/');
             const today = new Date();
             const first = today.getDate() - today.getDay() + 1;
             const last = first + 6;
@@ -155,7 +165,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             });
             axios.all(
                 componentsBuildings.map(building => {
-                    return axios.get(`https://janus-server-api.herokuapp.com/components/${building.building_code}`);
+                    return axios.get(`https://janus-backend-api.herokuapp.com/components/${building.building_code}`);
                 })
             )
             .then(axios.spread((...responses) => {
@@ -194,7 +204,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
             });
             axios.all(
                 allComponentsBuildings.map(building => {
-                    return axios.get(`https://janus-server-api.herokuapp.com/components/${building.building_code}`);
+                    return axios.get(`https://janus-backend-api.herokuapp.com/components/${building.building_code}`);
                 })
             )
             .then(axios.spread((...responses) => {
@@ -254,17 +264,17 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
 
 
     return (
-        <Modal visible={isNearMeOpened} animationType='slide'>
+        <Modal visible={isNearMeOpened} animationType='slide' style={{backgroundColor:theme.screenBackground}}>
             <ActivityRegistry
                 isActivityRegistryOpened={isActivityRegistryOpened}
                 setIsActivityRegistryOpened={setIsActivityRegistryOpened}
                 componentName={componentName}
             />
-            <View style={styles.topbar}>
+            <View style={[styles.topbar, {backgroundColor:theme.screenBackground, borderColor:theme.text}]}>
                 <Pressable onPress={() => setIsNearMeOpened(false)}>
-                    <IonIcon name='arrow-back' style={styles.arrowBackIcon}/>
+                    <IonIcon name='arrow-back' style={styles.arrowBackIcon} color={theme.text}/>
                 </Pressable>
-                <Text style={styles.header}>Near Me</Text>
+                <Text style={[styles.header, {color:theme.text, fontFamily:theme.font}]}>Near Me</Text>
             </View>
             <MapView style={styles.map}
                 initialRegion={{
@@ -293,7 +303,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                     strokeWidth={10}
                 />
                 {
-                    missedActivities[0]._id ? missedActivities.map(activity =>
+                    missedActivities[0]?._id ? missedActivities.map(activity =>
                         <Marker
                             onPress={() => selectedBuildingHandler(activity.building_code)}
                             key={activity._id}
@@ -307,7 +317,7 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                     ) : ''
                 }
                 {
-                    upcomingActivities[0]._id ? upcomingActivities.map(activity =>
+                    upcomingActivities[0]?._id ? upcomingActivities.map(activity =>
                         <Marker
                             onPress={() => selectedBuildingHandler(activity.building_code)}
                             key={activity._id}
@@ -336,49 +346,87 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
                 }
             </MapView>
             {selectedBuildingComponent?.building_code ?
-                <Animated.View style={[styles.itemContent, {opacity:fadeAnim}]}>
-                    <View>
-                        <Text>{selectedBuildingComponent?.building_code}</Text>
-                        <Text>{`${selectedBuildingComponent?.component_code} ${setOfComponents.length > 1 ? `(${setOfComponents.indexOf(selectedBuildingComponent) + 1})` : ''}`}</Text>
-                        <Text>
-                                {selectedBuildingComponent?.maintenance_next_date !== undefined
-                                        ? selectedBuildingComponent?.attendance_next_date !== undefined
-                                            ?
-                                                new Date(selectedBuildingComponent?.maintenance_next_date) <= new Date(selectedBuildingComponent?.attendance_next_date)
-                                                    ? 'Skötsel'
-                                                    : 'Tillsyn'
-                                            : 'Skötsel'
-                                        : selectedBuildingComponent?.attendance_next_date !== undefined
-                                            ? 'Tillsyn'
+                <Animated.View style={[styles.itemContent, {opacity:fadeAnim, backgroundColor:dark ? '#333F50' : '#F5F5F5'}]}>
+                        <View style={styles.upperArea}>
+                                <View style={styles.upperOne}>
+                                            <View style={{display:'flex', flexDirection:'row', alignItems:'center'}}>
+                                                <Image source={require('../assets/images/TaskDark.png')} style={{height:25, width:25}}/>
+                                                <Text style={{color:'#fff'}}>
+                                                        {selectedBuildingComponent?.maintenance_next_date !== undefined
+                                                                ? selectedBuildingComponent?.attendance_next_date !== undefined
+                                                                    ?
+                                                                        new Date(selectedBuildingComponent?.maintenance_next_date) <= new Date(selectedBuildingComponent?.attendance_next_date)
+                                                                            ? 'Skötsel'
+                                                                            : 'Tillsyn'
+                                                                    : 'Skötsel'
+                                                                : selectedBuildingComponent?.attendance_next_date !== undefined
+                                                                    ? 'Tillsyn'
+                                                                    : ''
+                                                        }
+                                                </Text>
+                                            </View>
+                                            <View style={{display:'flex', flexDirection:'row', alignItems:'center'}}>
+                                                <Image source={require('../assets/images/DateDark.png')} style={{height:25, width:25}}/>
+                                                <Text style={{color:'#fff'}}>
+                                                    {   selectedBuildingComponent?.maintenance_next_date !== undefined
+                                                            ? selectedBuildingComponent?.attendance_next_date !== undefined
+                                                                ?
+                                                                    new Date(selectedBuildingComponent?.maintenance_next_date) <= new Date(selectedBuildingComponent?.attendance_next_date)
+                                                                        ? moment(selectedBuildingComponent?.maintenance_next_date).format('YYYY-MM-DD')
+                                                                        : moment(selectedBuildingComponent?.attendance_next_date).format('YYYY-MM-DD')
+                                                                : moment(selectedBuildingComponent?.maintenance_next_date).format('YYYY-MM-DD')
+                                                            : selectedBuildingComponent?.attendance_next_date !== undefined
+                                                                ? moment(selectedBuildingComponent?.attendance_next_date).format('YYYY-MM-DD')
+                                                                : ''
+                                                    }
+                                                </Text>
+                                            </View>
+                                </View>
+                                <View style={styles.upperTwo}>
+                                            <View style={{display:'flex', flexDirection:'row', alignItems:'center'}}>
+                                                <Image source={require('../assets/images/SettingsDark.png')} style={{height:25, width:25}}/>
+                                                <Text style={{color:'#fff'}}>{selectedBuildingComponent?.name}</Text>
+                                            </View>
+                                            <View style={{display:'flex', flexDirection:'row', alignItems:'center'}}>
+                                                <Image source={require('../assets/images/BarcodeDark.png')} style={{height:25, width:25}}/>
+                                                <Text style={{color:'#fff'}}>{`${selectedBuildingComponent?.component_code} ${setOfComponents.length > 1 ? `(${setOfComponents.indexOf(selectedBuildingComponent) + 1})` : ''}`}</Text>
+                                            </View>
+                                </View>
+                                <View style={styles.upperThree}>
+                                            <Pressable style={[styles.detailsButton, {
+                                                backgroundColor:dark ? '#000' : '#D9D9D9',
+                                                borderColor:dark ? '#35C7FB' : '#000'
+                                                }]} onPress={() => activityRegisrtyOpener(selectedBuildingComponent?.component_code)}
+                                            >
+                                                {
+                                                    dark
+                                                    ? <Image source={require('../assets/images/ArrowForwardDark.png')} style={{height:25, width:25}}/>
+                                                    : <Image source={require('../assets/images/ArrowForward.png')} style={{height:25, width:25}}/>
+                                                }
+                                            </Pressable>
+                                </View>
+                        </View>
+                        <View style={styles.lowerArea}>
+                                        <View style={{display:'flex', flexDirection:'row', alignItems:'center', width:280}}>
+                                            <Image source={require('../assets/images/HomeDark.png')} style={{height:25, width:25}}/>
+                                            <Text style={{color:'#fff'}}>{selectedBuildingComponent?.building_code} {selectedBuildingComponent?.position_of_code}</Text>
+                                        </View>
+                                        {
+                                            setOfComponents.length > 1
+                                            ? <View style={styles.swipeButtonContainer}>
+                                                <Pressable onPress={leftswipeHandler}>
+                                                    <Image source={require('../assets/images/LeftNearMe.png')} style={styles.swipeImage}/>
+                                                </Pressable>
+                                                <Pressable onPress={rightswipeHandler}>
+                                                    <Image source={require('../assets/images/RightNearMe.png')} style={[styles.swipeImage, {marginLeft:20}]}/>
+                                                </Pressable>
+                                            </View>
                                             : ''
-                                }
-                        </Text>
-                        <Text>
-                            {   selectedBuildingComponent?.maintenance_next_date !== undefined
-                                    ? selectedBuildingComponent?.attendance_next_date !== undefined
-                                        ?
-                                            new Date(selectedBuildingComponent?.maintenance_next_date) <= new Date(selectedBuildingComponent?.attendance_next_date)
-                                                ? moment(selectedBuildingComponent?.maintenance_next_date).format('YYYY-MM-DD')
-                                                : moment(selectedBuildingComponent?.attendance_next_date).format('YYYY-MM-DD')
-                                        : moment(selectedBuildingComponent?.maintenance_next_date).format('YYYY-MM-DD')
-                                    : selectedBuildingComponent?.attendance_next_date !== undefined
-                                        ? moment(selectedBuildingComponent?.attendance_next_date).format('YYYY-MM-DD')
-                                        : ''
-                            }
-                        </Text>
-                    </View>
-                    <View style={styles.imageWrapper}>
-                        <Pressable style={styles.detailsButton} onPress={() => activityRegisrtyOpener(selectedBuildingComponent?.component_code)}>
-                            <Text style={styles.buttonText}>Details</Text>
-                            <IonIcon name='arrow-forward' style={styles.detailsIcon} />
-                        </Pressable>
-                        {setOfComponents.length > 1 ? <Pressable onPress={swipeHandler} style={styles.swipeButtonContainer}>
-                            <Image source={require('../assets/images/SwipeRight.png')} style={styles.image}/>
-                        </Pressable> : ''}
-                    </View>
+                                        }
+                        </View>
                 </Animated.View> :
-                <View style={styles.itemContent}>
-                    <Text>Building has no components</Text>
+                <View style={[styles.itemContent, {backgroundColor:dark ? '#333F50' : '#fff'}]}>
+                    <Text style={{color:theme.text, fontFamily:theme.font}}>Building has no components</Text>
                 </View>
             }
         </Modal>
@@ -389,13 +437,12 @@ const NearMe = ({isNearMeOpened, setIsNearMeOpened}) => {
 // Styles
 const styles = StyleSheet.create({
     topbar:{
-        width:'100%',
         height:70,
+        width:'100%',
         display:'flex',
         flexDirection:'row',
         alignItems:'center',
-        borderBottomWidth:1,
-        borderBottomColor:'#ccc'
+        borderBottomWidth:1
     },
     arrowBackIcon:{
         fontSize:30,
@@ -411,27 +458,50 @@ const styles = StyleSheet.create({
     },
     itemContent:{
         bottom:20,
-        paddingHorizontal:30,
-        paddingVertical:20,
-        display:'flex',
-        borderColor:'#ccc',
-        alignItems:'center',
-        flexDirection:'row',
-        borderBottomWidth:1,
-        position:'absolute',
         width:'100%',
-        backgroundColor:'#ffffffe6',
-        justifyContent:'space-between'
-    },
-    detailsButton:{
-        height:50,
         display:'flex',
         borderRadius:5,
+        borderTopWidth:2,
+        paddingVertical:20,
+        alignItems:'center',
+        borderBottomWidth:2,
+        position:'absolute',
+        paddingHorizontal:30,
+        borderColor:'#35c7fb',
+        backgroundColor:'#333f50',
+        justifyContent:'space-between'
+    },
+    upperArea:{
+        flex:2,
+        width:'100%',
+        display:'flex',
         alignItems:'center',
         flexDirection:'row',
-        paddingHorizontal:30,
+        justifyContent:'space-between'
+    },
+    lowerArea:{
+        flex:1,
+        width:'100%',
+        display:'flex',
+        flexDirection:'row',
+        alignItems:'center',
+        justifyContent:'space-between'
+    },
+    swipeButtonContainer:{
+        marginTop:20,
+        display:'flex',
+        alignItems:'center',
+        flexDirection:'row',
+        justifyContent:'space-between',
+    },
+    detailsButton:{
+        width:50,
+        height:50,
+        borderWidth:1,
+        display:'flex',
+        borderRadius:50,
+        alignItems:'center',
         justifyContent:'center',
-        backgroundColor:'#0d80e7'
     },
     buttonText:{
         color:'#fff'
@@ -442,13 +512,14 @@ const styles = StyleSheet.create({
         marginLeft:5,
         color:'#fff',
     },
-    imageWrapper:{
-        display:'flex',
-        alignItems:'center'
-    },
     image:{
         width:50,
+        height:50,
         marginTop:20
+    },
+    swipeImage:{
+        width:35,
+        height:35
     }
 });
 

@@ -1,15 +1,31 @@
 // Imports
 import NearMe from './NearMe';
 import {useState} from 'react';
+import {useFonts} from 'expo-font';
 import MyTasksModal from './MyTasksModal';
 import ActivityRegistry from './ActivityRegistry';
+import {useTheme} from '../src/theme/themeProvider';
 import NotificationsModal from './NotificationsModal';
-import {View, StyleSheet, Text, Pressable, ScrollView, Image} from 'react-native';
+import {View, StyleSheet, Text, Pressable, Image} from 'react-native';
 
 
 // Main Function
-const Menu = ({navigation}) => {
+const Menu = () => {
 
+
+    // Theme
+    const {dark, theme, setScheme} = useTheme();
+    const themeToggler = () => {
+        dark ? setScheme('light') : setScheme('dark');
+    };
+
+
+    // Font
+    const [fontsLoaded] = useFonts({
+        'OpenSans': require('../assets/fonts/OpenSans-SemiBold.ttf'),
+    });
+
+ 
     // Activity Registry opener
     const [isActivityRegistryOpened, setIsActivityRegistryOpened] = useState(false);
 
@@ -27,7 +43,7 @@ const Menu = ({navigation}) => {
 
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={[styles.container, {backgroundColor:theme.screenBackground}]}>
             <ActivityRegistry 
                 isActivityRegistryOpened={isActivityRegistryOpened}
                 setIsActivityRegistryOpened={setIsActivityRegistryOpened}
@@ -44,47 +60,81 @@ const Menu = ({navigation}) => {
                 isNearMeOpened={isNearMeOpened}
                 setIsNearMeOpened={setIsNearMeOpened}
             />
-            <Pressable style={styles.itemContainer} onPress={() => setIsActivityRegistryOpened(true)}>
+            <Pressable style={[styles.itemContainer, {
+                    backgroundColor:dark ? '#333f50' : '#f5f5f5',
+                    borderColor:dark ? '#35c7fb' : '#000'
+                }]} onPress={() => setIsActivityRegistryOpened(true)}>
                 <View>
-                    <Image source={require('../assets/images/Barcode.png')} style={styles.tasksImg}/>
+                    {dark
+                        ? <Image source={require('../assets/images/BarcodeDark.png')} style={styles.tasksImg}/>
+                        : <Image source={require('../assets/images/Barcode.png')} style={styles.tasksImg}/>
+                    }
                 </View>
-                <View>
-                    <Text style={styles.text}>Barcode/NFC</Text>
-                </View>
-            </Pressable>
-            <Pressable style={styles.itemContainer} onPress={() => setIsMyTasksOpened(true)}>
-                <View>
-                    <Image source={require('../assets/images/MyTasks.png')} style={styles.tasksImg}/>
-                </View>
-                <View>
-                    <Text style={styles.text}>My Tasks</Text>
+                <View style={styles.textContainer}>
+                    <Text style={[styles.text, {color:dark ? '#35c7fb' : '#000', fontFamily:fontsLoaded ? theme.font : ''}]}>Scan Barcode</Text>
                 </View>
             </Pressable>
-            <Pressable style={styles.itemContainer} onPress={() => setIsNearMeOpened(true)}>
+            <Pressable style={[styles.itemContainer, {
+                    backgroundColor:dark ? '#333f50' : '#f5f5f5',
+                    borderColor:dark ? '#35c7fb' : '#000',
+                    shadowColor:dark ? '#35c7fb' : '#000'
+                }]} onPress={() => setIsMyTasksOpened(true)}>
                 <View>
-                    <Image source={require('../assets/images/NearMe.png')} style={styles.tasksImg}/>
+                    {dark
+                        ? <Image source={require('../assets/images/MyTasksDark.png')} style={styles.taskImg}/>
+                        : <Image source={require('../assets/images/MyTasks.png')} style={styles.taskImg}/>
+                    }
                 </View>
-                <View>
-                    <Text style={styles.text}>Near Me</Text>
-                </View>
-            </Pressable>
-            <Pressable style={styles.itemContainer} onPress={() => navigation.navigate('Properties')}>
-                <View>
-                    <Image source={require('../assets/images/MyProperties.png')} style={styles.tasksImg}/>
-                </View>
-                <View>
-                    <Text style={styles.text}>My Properties</Text>
-                </View>
-            </Pressable>
-            <Pressable style={styles.itemContainer} onPress={() => setIsNotificationsOpened(true)}>
-                <View>
-                    <Image source={require('../assets/images/Notifications.png')} style={styles.tasksImg}/>
-                </View>
-                <View>
-                    <Text style={styles.text}>Notifications</Text>
+                <View style={styles.textContainer}>
+                    <Text style={[styles.text, {color:dark ? '#35c7fb' : '#000', fontFamily:fontsLoaded ? theme.font : ''}]}>My Tasks</Text>
                 </View>
             </Pressable>
-        </ScrollView>
+            <Pressable style={[styles.itemContainer, {
+                    backgroundColor:dark ? '#333f50' : '#f5f5f5',
+                    borderColor:dark ? '#35c7fb' : '#000',
+                    shadowColor:dark ? '#35c7fb' : '#000'
+                }]} onPress={() => setIsNearMeOpened(true)}>
+                <View>
+                    {dark
+                        ? <Image source={require('../assets/images/NearMeDark.png')} style={styles.tasksImg}/>
+                        : <Image source={require('../assets/images/NearMe.png')} style={styles.tasksImg}/>
+                    }
+                </View>
+                <View style={styles.textContainer}>
+                    <Text style={[styles.text, {color:dark ? '#35c7fb' : '#000', fontFamily:fontsLoaded ? theme.font : ''}]}>Near Me</Text>
+                </View>
+            </Pressable>
+            <Pressable style={[styles.itemContainer, {
+                    backgroundColor:dark ? '#333f50' : '#f5f5f5',
+                    borderColor:dark ? '#35c7fb' : '#000',
+                    shadowColor:dark ? '#35c7fb' : '#000'
+                }]} onPress={() => setIsNotificationsOpened(true)}>
+                <View>
+                    {dark
+                        ? <Image source={require('../assets/images/NotificationsDark.png')} style={styles.taskImg}/>
+                        : <Image source={require('../assets/images/Notifications.png')} style={styles.taskImg}/> 
+                    }
+                </View>
+                <View style={styles.textContainer}>
+                    <Text style={[styles.text, {color:dark ? '#35c7fb' : '#000', fontFamily:fontsLoaded ? theme.font : ''}]}>Notifications</Text>
+                </View>
+            </Pressable>
+            <Pressable style={[styles.itemContainer, {
+                    backgroundColor:dark ? '#333f50' : '#f5f5f5',
+                    borderColor:dark ? '#35c7fb' : '#000',
+                    shadowColor:dark ? '#35c7fb' : '#000'
+                }]} onPress={themeToggler}>
+                <View>
+                    {dark
+                        ? <Image source={require('../assets/images/DarkTheme.png')} style={styles.modeImg}/>
+                        : <Image source={require('../assets/images/LightTheme.png')} style={styles.modeImg}/>
+                    }
+                </View>
+                <View style={styles.textContainer}>
+                    <Text style={[styles.text, {color:dark ? '#35c7fb' : '#000', fontFamily:fontsLoaded ? theme.font : ''}]}>Mode</Text>
+                </View>
+            </Pressable>
+        </View>
     )
 };
 
@@ -92,45 +142,53 @@ const Menu = ({navigation}) => {
 // Styles
 const styles = StyleSheet.create({
     container:{
-      display:'flex',
-      flexDirection:'column'
+        height:'100%',
+        paddingTop:10,
+        display:'flex',
+        borderTopWidth:1,
+        flexDirection:'column',
     },
     itemContainer:{
-      height:150,
+      height:'17%',
+      minHeight:80,
       width:'100%',
+      maxHeight:165,
       display:'flex',
-      paddingLeft:'25%',
-      borderColor:'#ccc',
+      borderRadius:5,
+      marginVertical:2,
+      borderTopWidth:2,
+      borderBottomWidth:2,
+      position:'relative',
       alignItems:'center',
-      flexDirection:'row',
-      borderBottomWidth:1,
       paddingHorizontal:30,
-      justifyContent:'flex-start'
+      flexDirection:'column',
+      justifyContent:'center'
     },
     text:{
-      fontSize:17,
-      marginBottom:7
-    },
-    img:{
-        width:80,
-        height:80,
-        marginRight:5,
-        marginLeft:-10
-    },
-    housesImg:{
-        width:70,
-        height:35,
-        marginLeft:0,
-        marginRight:10
+        fontSize:14,
+        marginBottom:6,
+        textAlign:'center',
     },
     tasksImg:{
-        width:70,
-        height:70,
-        marginLeft:0,
-        marginRight:10
+        width:40,
+        height:40
     },
-    locationIcon:{
-        marginLeft:-10
+    taskImg:{
+        width:30,
+        height:40
+    },
+    modeImg:{
+        width:40,
+        height:40
+    },
+    darkNotificationsImg:{
+        width:40,
+        height:40
+    },
+    textContainer:{
+        bottom:0,
+        width:'100%',
+        position:'absolute'
     }
 });
 
